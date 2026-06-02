@@ -14,18 +14,43 @@ export default function RootLayout() {
     useEffect(() => {
         const checkAuth = async () => {
             const token = await SecureStore.getItemAsync('token');
+            console.log('token:', token);
             const inAuthGroup = segments[0] === 'login' || segments[0] === 'signup';
 
-            if (!token && !inAuthGroup) {
-                setTimeout(() => router.replace('/login'), 0);
-            } else if (token && inAuthGroup) {
+            if (!token) {
+                if (!inAuthGroup) setTimeout(() => router.replace('/login'), 0);
+                setIsReady(true);
+                return;
+            }
+
+            if (inAuthGroup) {
                 setTimeout(() => router.replace('/(tabs)'), 0);
+                setIsReady(true);
+                return;
+            }
+
+            try {
+                const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/profile`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+
+                const body = await response.json();
+                console.log('profile status:', response.status);
+                console.log('profile body:', JSON.stringify(body));
+
+                if (!response.ok) {
+                    await SecureStore.deleteItemAsync('token');
+                    await SecureStore.deleteItemAsync('user');
+                    setTimeout(() => router.replace('/login'), 0);
+                }
+            } catch {
+                // Network error — fail open
             }
 
             setIsReady(true);
         };
 
-        checkAuth();
+        void checkAuth();
     }, [segments]);
 
     if (!isReady) {

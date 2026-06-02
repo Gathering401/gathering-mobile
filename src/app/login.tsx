@@ -17,7 +17,10 @@ const LogIn = () => {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     const { control, handleSubmit } = useForm<LogInValues>({
-        defaultValues: { username: '', password: '' }
+        defaultValues: {
+            username: '',
+            password: ''
+        }
     });
 
     const onSubmit = async (values: LogInValues) => {

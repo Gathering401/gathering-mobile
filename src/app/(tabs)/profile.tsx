@@ -45,12 +45,24 @@ const Profile = () => {
         });
     };
 
+    const handleLogout = async () => {
+        await SecureStore.deleteItemAsync('token');
+        await SecureStore.deleteItemAsync('user');
+        router.replace('/login');
+    };
+
     return (
         <View style={styles.container}>
-            <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
-                <Ionicons name="pencil-outline" size={14} color="#228be6" />
-                <Text style={styles.editText}>Edit</Text>
-            </TouchableOpacity>
+            <View style={styles.topActions}>
+                <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
+                    <Ionicons name="pencil-outline" size={14} color="#228be6" />
+                    <Text style={styles.editText}>Edit</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+                    <Ionicons name="log-out-outline" size={14} color="#fa5252" />
+                    <Text style={styles.logoutText}>Logout</Text>
+                </TouchableOpacity>
+            </View>
 
             <Text style={styles.title}>Profile</Text>
             <Text style={styles.username}>{user.username}</Text>
@@ -65,12 +77,15 @@ const Profile = () => {
 const styles = StyleSheet.create({
     centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     container: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 16, backgroundColor: 'rgba(0,0,0,0.03)' },
-    editButton: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-end', marginBottom: 16, gap: 4 },
+    editButton: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-end', gap: 4 },
     editText: { color: '#228be6', fontSize: 13 },
     title: { fontSize: 32, fontWeight: '700', marginBottom: 8 },
     username: { fontSize: 18, fontWeight: '600', marginBottom: 4 },
     name: { fontSize: 16, marginBottom: 8 },
     field: { fontSize: 15, marginBottom: 4, color: '#444' },
+    logoutButton: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-end', marginBottom: 16, gap: 4, marginLeft: 12 },
+    logoutText: { color: '#fa5252', fontSize: 13 },
+    topActions: { flexDirection: 'row', alignSelf: 'flex-end', marginBottom: 16 },
 });
 
 export default Profile;
