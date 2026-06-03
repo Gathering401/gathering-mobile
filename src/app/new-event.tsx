@@ -9,10 +9,11 @@ import dayjs from 'dayjs';
 import _ from 'lodash';
 import {
     View, Text, TextInput, TouchableOpacity, ScrollView,
-    StyleSheet, KeyboardAvoidingView, Platform, Modal
+    KeyboardAvoidingView, Platform, Modal
 } from 'react-native';
 import { GatheringGroup } from '../constants/GatheringGroup';
 import { Repetition, getRepetitionOptions, getRepetitionByValue, getRepetitionById } from '../constants/enums/Repetition';
+import {styles} from "../styles/new-event";
 
 interface EventValues {
     name: string;
@@ -177,7 +178,7 @@ const EventForm = () => {
                     <Controller
                         key={field}
                         control={control}
-                        name={field}
+                        name={field as any}
                         render={({ field: { onChange, value } }) => (
                             <View style={styles.fieldContainer}>
                                 <Text style={styles.label}>{_.startCase(field)}</Text>
@@ -228,9 +229,11 @@ const EventForm = () => {
                             mode="datetime"
                             display="default"
                             minimumDate={new Date()}
-                            onChange={(_, date) => {
+                            onChange={(_, date: dayjs) => {
                                 setShowDatePicker(false);
-                                if (date) setValue('date', date);
+                                if (date) {
+                                    setValue('date', date);
+                                }
                             }}
                         />
                     )}
@@ -255,7 +258,7 @@ const EventForm = () => {
                                         key={opt.value}
                                         style={styles.modalOption}
                                         onPress={() => {
-                                            setValue('repetition', getRepetitionByValue(opt.value));
+                                            setValue('repetition', getRepetitionByValue(opt.value) as Repetition);
                                             setShowRepetitionPicker(false);
                                         }}
                                     >
@@ -289,7 +292,7 @@ const EventForm = () => {
                                         key={g.id}
                                         style={styles.modalOption}
                                         onPress={() => {
-                                            setValue('groupId', g.id);
+                                            setValue('groupId', g.id as number);
                                             setShowGroupPicker(false);
                                         }}
                                     >
@@ -318,27 +321,5 @@ const EventForm = () => {
         </KeyboardAvoidingView>
     );
 };
-
-const styles = StyleSheet.create({
-    container: { flexGrow: 1, padding: 24 },
-    title: { fontSize: 28, fontWeight: '700', marginBottom: 24 },
-    fieldContainer: { marginBottom: 16 },
-    label: { fontSize: 14, fontWeight: '500', marginBottom: 4 },
-    input: { borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 10, fontSize: 16 },
-    textarea: { height: 100, textAlignVertical: 'top' },
-    selectButton: { justifyContent: 'center' },
-    disabled: { backgroundColor: '#f5f5f5', color: '#999' },
-    buttonRow: { flexDirection: 'row', gap: 12, marginTop: 8 },
-    cancelButton: { flex: 1, borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 14, alignItems: 'center' },
-    cancelText: { fontSize: 16, color: '#444' },
-    submitButton: { flex: 1, backgroundColor: '#228be6', borderRadius: 8, padding: 14, alignItems: 'center' },
-    submitText: { color: '#fff', fontWeight: '600', fontSize: 16 },
-    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
-    modalContent: { backgroundColor: '#fff', borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 24 },
-    modalTitle: { fontSize: 18, fontWeight: '700', marginBottom: 16 },
-    modalOption: { paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#eee' },
-    modalOptionText: { fontSize: 16 },
-    modalCancel: { textAlign: 'center', color: '#228be6', marginTop: 16, fontSize: 16 },
-});
 
 export default EventForm;

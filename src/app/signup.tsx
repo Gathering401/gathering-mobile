@@ -7,8 +7,9 @@ import _ from 'lodash';
 import dayjs from 'dayjs';
 import {
     View, Text, TextInput, TouchableOpacity,
-    StyleSheet, KeyboardAvoidingView, Platform, ScrollView
+    KeyboardAvoidingView, Platform, ScrollView
 } from 'react-native';
+import {styles} from "../styles/signup";
 
 interface SignUpValues {
     username: string;
@@ -122,7 +123,7 @@ const SignUp = () => {
                     <Controller
                         key={field}
                         control={control}
-                        name={field}
+                        name={field as any}
                         render={({ field: { onChange, value } }) => (
                             <View style={styles.fieldContainer}>
                                 <Text style={styles.label}>{_.startCase(field)}</Text>
@@ -144,7 +145,7 @@ const SignUp = () => {
                     <Controller
                         key={field}
                         control={control}
-                        name={field}
+                        name={field as any}
                         render={({ field: { onChange, value } }) => (
                             <View style={styles.fieldContainer}>
                                 <Text style={styles.label}>{_.startCase(field)}</Text>
@@ -179,16 +180,5 @@ const SignUp = () => {
         </KeyboardAvoidingView>
     );
 };
-
-const styles = StyleSheet.create({
-    container: { flexGrow: 1, justifyContent: 'center', padding: 24 },
-    title: { fontSize: 28, fontWeight: '700', marginBottom: 24 },
-    fieldContainer: { marginBottom: 16 },
-    label: { fontSize: 14, fontWeight: '500', marginBottom: 4 },
-    input: { borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 10, fontSize: 16 },
-    button: { backgroundColor: '#228be6', borderRadius: 8, padding: 14, alignItems: 'center', marginTop: 8 },
-    buttonText: { color: '#fff', fontWeight: '600', fontSize: 16 },
-    link: { marginTop: 16, textAlign: 'center', color: '#228be6' }
-});
 
 export default SignUp;

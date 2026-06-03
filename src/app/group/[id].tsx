@@ -1,15 +1,16 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import {useMutation, useQuery, UseQueryResult} from '@tanstack/react-query';
 import {
-    View, Text, TouchableOpacity, ScrollView, StyleSheet,
+    View, Text, TouchableOpacity, ScrollView,
     ActivityIndicator, TextInput, Modal, Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { GatheringGroup as GroupType } from '../../constants/GatheringGroup';
+import { GatheringGroup } from '../../constants/GatheringGroup';
 import { getRoleById, getRoleByValue, getRoleOptions, Role } from '../../constants/enums/Role';
 import { InviteStatus } from '../../constants/enums/InviteStatus';
+import {styles} from "../../styles/group";
 
 const GroupDisplay = () => {
     const router = useRouter();
@@ -39,7 +40,7 @@ const GroupDisplay = () => {
         'Authorization': `Bearer ${token}`
     };
 
-    const { isLoading, data: group, error, refetch } = useQuery<GroupType>({
+    const { isLoading, data: group, error, refetch }: UseQueryResult = useQuery<GatheringGroup>({
         queryKey: [`groupId-${groupId}`],
         enabled: !!token,
         queryFn: async () => {
@@ -79,7 +80,7 @@ const GroupDisplay = () => {
         }
     });
 
-    const { data: searchResults, isLoading: loadingSearch } = useQuery({
+    const { data: searchResults, isLoading: loadingSearch }: UseQueryResult = useQuery({
         queryKey: [`search-users-${groupId}-${debouncedInviteSearch}`],
         enabled: !!debouncedInviteSearch && !!token,
         queryFn: async () => {
@@ -126,10 +127,10 @@ const GroupDisplay = () => {
     }, [error]);
 
     useEffect(() => {
-        if (!isLoading && user && !activeMembers.find(m => m.id === user.id)) {
+        if (!isLoading && !error && group && user && !activeMembers.find(m => m.id === user.id)) {
             router.replace('/');
         }
-    }, [isLoading, activeMembers]);
+    }, [isLoading, group, activeMembers]);
 
     if (isLoading || !user) {
         return <View style={styles.centered}><ActivityIndicator size="large" /></View>;
@@ -366,48 +367,5 @@ const GroupDisplay = () => {
         </ScrollView>
     );
 };
-
-const styles = StyleSheet.create({
-    centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    container: { padding: 16, alignItems: 'center' },
-    editButton: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-end', marginBottom: 16, gap: 4 },
-    editText: { color: '#228be6', fontSize: 13 },
-    title: { fontSize: 32, fontWeight: '700', marginBottom: 8, textAlign: 'center' },
-    description: { fontSize: 16, color: '#555', marginBottom: 8, textAlign: 'center' },
-    owner: { fontSize: 14, color: '#888', marginBottom: 16 },
-    actionRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
-    button: { backgroundColor: '#228be6', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8 },
-    buttonText: { color: '#fff', fontWeight: '600', fontSize: 13 },
-    outlineButton: { borderWidth: 1, borderColor: '#228be6', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8 },
-    outlineButtonText: { color: '#228be6', fontSize: 13 },
-    sectionTitle: { fontSize: 16, fontWeight: '600', marginBottom: 8, alignSelf: 'flex-start' },
-    eventsRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginTop: 16 },
-    memberChip: { backgroundColor: '#f0f0f0', borderRadius: 8, padding: 10, marginRight: 8, minWidth: 120 },
-    memberChipName: { fontSize: 13, fontWeight: '500' },
-    memberChipUsername: { fontSize: 11, color: '#666' },
-    memberCard: { borderWidth: 1, borderColor: '#ddd', borderRadius: 8, padding: 12, marginBottom: 8 },
-    pendingBadge: { backgroundColor: '#fee2e2', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2, alignSelf: 'flex-start', marginBottom: 4 },
-    pendingText: { color: '#ef4444', fontSize: 11, fontWeight: '600' },
-    memberName: { fontSize: 15, fontWeight: '500' },
-    memberUsername: { fontSize: 13, color: '#666' },
-    roleRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
-    roleChip: { borderWidth: 1, borderColor: '#ccc', borderRadius: 16, paddingHorizontal: 10, paddingVertical: 4 },
-    roleChipActive: { backgroundColor: '#228be6', borderColor: '#228be6' },
-    roleChipText: { fontSize: 12, color: '#444' },
-    roleChipTextActive: { color: '#fff' },
-    removeButton: { marginTop: 8, borderWidth: 1, borderColor: '#ef4444', borderRadius: 8, padding: 6, alignItems: 'center' },
-    removeText: { color: '#ef4444', fontSize: 13 },
-    modalContainer: { flex: 1, padding: 20, paddingTop: 60 },
-    modalTitle: { fontSize: 22, fontWeight: '700', marginBottom: 16 },
-    modalSectionLabel: { fontSize: 12, fontWeight: '600', color: '#888', marginBottom: 8, marginTop: 8 },
-    searchInput: { borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 10, marginBottom: 12 },
-    inviteRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#eee' },
-    inviteButton: { backgroundColor: '#228be6', borderRadius: 6, paddingHorizontal: 10, paddingVertical: 6 },
-    inviteButtonDisabled: { backgroundColor: '#ccc' },
-    inviteButtonText: { color: '#fff', fontSize: 13 },
-    emptyText: { textAlign: 'center', color: '#888', marginTop: 16 },
-    closeButton: { backgroundColor: '#f0f0f0', borderRadius: 8, padding: 14, alignItems: 'center', marginTop: 16 },
-    closeButtonText: { fontSize: 16, color: '#333' },
-});
 
 export default GroupDisplay;

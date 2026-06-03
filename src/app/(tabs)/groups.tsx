@@ -1,32 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
     View, Text, TextInput, TouchableOpacity,
-    ScrollView, StyleSheet, ActivityIndicator
+    ScrollView, ActivityIndicator
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { GatheringGroup } from '../../constants/GatheringGroup';
-
-const GroupCard = ({ group, onPress }: { group: GatheringGroup; onPress: () => void }) => (
-    <TouchableOpacity style={styles.card} onPress={onPress}>
-        <View style={styles.cardRow}>
-            <View style={styles.cardText}>
-                <Text style={styles.cardTitle}>{group.name}</Text>
-                <Text style={styles.cardDescription}>{group.description}</Text>
-            </View>
-            {group.public && (
-                <View style={styles.badge}>
-                    <Text style={styles.badgeText}>Public</Text>
-                </View>
-            )}
-        </View>
-    </TouchableOpacity>
-);
+import GroupCard from "../../components/GroupCard";
+import { styles } from "../../styles/groups";
 
 const Groups = () => {
     const router = useRouter();
+    const queryClient = useQueryClient();
     const [token, setToken] = useState<string | null>(null);
     const [search, setSearch] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -75,6 +61,19 @@ const Groups = () => {
         }
     });
 
+    const handleInviteResponse = async (groupId: number, accepted: boolean) => {
+        const res = await fetch(
+            `${process.env.EXPO_PUBLIC_API_URL}/group/invite-response?id=${groupId}&accepted=${accepted}`,
+            { method: 'PUT', headers: authHeader }
+        );
+        const data = await res.json();
+
+        if (!data.success) {
+            throw new Error(data.error);
+        }
+        await queryClient.invalidateQueries({ queryKey: ['groups-my'], exact: true });
+    };
+
     const filteredJoinedGroups = joinedGroups.filter(g =>
         g.name.toLowerCase().includes(debouncedSearch.toLowerCase())
     );
@@ -103,6 +102,7 @@ const Groups = () => {
                     key={group.id}
                     group={group}
                     onPress={() => router.push(`/group/${group.id}`)}
+                    onInviteResponse={(accepted) => handleInviteResponse(group.id, accepted)}
                 />
             ))}
             {!joinedLoading && filteredJoinedGroups.length === 0 && (
@@ -130,25 +130,5 @@ const Groups = () => {
         </ScrollView>
     );
 };
-
-const styles = StyleSheet.create({
-    container: { padding: 16 },
-    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-    title: { fontSize: 32, fontWeight: '700' },
-    sectionTitle: { fontSize: 20, fontWeight: '600', marginBottom: 8 },
-    button: { backgroundColor: '#228be6', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 8 },
-    buttonText: { color: '#fff', fontWeight: '600' },
-    searchInput: { borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 10, marginBottom: 12 },
-    card: { borderWidth: 1, borderColor: '#ddd', borderRadius: 8, padding: 12, marginBottom: 8, backgroundColor: '#fff' },
-    cardRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-    cardText: { flex: 1 },
-    cardTitle: { fontSize: 16, fontWeight: '600' },
-    cardDescription: { fontSize: 13, color: '#666', marginTop: 2 },
-    badge: { backgroundColor: '#dbe9ff', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 2, marginLeft: 8 },
-    badgeText: { color: '#228be6', fontSize: 12, fontWeight: '500' },
-    divider: { height: 1, backgroundColor: '#eee', marginVertical: 16 },
-    emptyText: { textAlign: 'center', color: '#888', marginVertical: 8 },
-    errorText: { color: 'red', marginVertical: 8 },
-});
 
 export default Groups;
