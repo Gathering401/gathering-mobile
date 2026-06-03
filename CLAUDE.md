@@ -6,7 +6,7 @@ Converted the Gathering web application (React + Vite + Mantine) to a React Nati
 ### Key Decisions Made
 - **Framework:** Expo SDK 54 (blank TypeScript template)
 - **Navigation:** Expo Router with file-based routing
-- **Styling:** Plain `StyleSheet` (no NativeWind — kept simple)
+- **Styling:** Plain `StyleSheet` in a dedicated `styles/` folder (no NativeWind — kept simple)
 - **Auth storage:** `expo-secure-store` replacing `react-cookie`
 - **Forms:** `react-hook-form` replacing `@mantine/form`
 - **Notifications:** `react-native-toast-message` replacing `@mantine/notifications`
@@ -20,7 +20,7 @@ Converted the Gathering web application (React + Vite + Mantine) to a React Nati
 
 ## What It Took
 
-### Environment Issues (Most of the Session)
+### Environment Issues (Most of Session 1)
 Getting the environment stable was the hardest part:
 - SDK 56 and 55 were incompatible with the physical device's Expo Go app (max SDK 54)
 - Multiple fresh project scaffolds were required due to mixed SDK version conflicts
@@ -59,6 +59,9 @@ src/app/
 ├── new-group.tsx
 └── new-event.tsx
 
+src/components/              ← Shared components extracted from screens
+└── GroupCard.tsx
+
 src/constants/               ← Copied directly from web project (no changes needed)
 ├── Event.ts
 ├── GatheringGroup.ts
@@ -68,6 +71,10 @@ src/constants/               ← Copied directly from web project (no changes ne
     ├── Repetition.ts
     ├── Role.ts
     └── Rsvp.ts
+
+src/styles/                  ← All StyleSheet definitions live here (established pattern — keep)
+├── groups.ts
+└── group.ts
 ```
 
 ---
@@ -83,11 +90,17 @@ src/constants/               ← Copied directly from web project (no changes ne
 - Token validation against the API on startup via `GET /profile`
 - Logout button on profile screen (clears token + user from SecureStore, redirects to login)
 - GitHub repo wired up (Gathering-Mobile, default branch: main)
+- Group creation and group detail page
+- Invite flow — admin can search users and send invites
+- Invite response flow — groups page shows Join/Reject buttons for pending invites received from a group, and a greyed-out Pending badge for outgoing requests awaiting group approval
+- `GroupCard` extracted into `src/components/GroupCard.tsx`
+- All styles moved to `src/styles/` — this pattern should be maintained going forward
+
+### Known Bug (Stopping Point)
+- After accepting a group invite and returning to the groups list, clicking into the newly joined group fails with "Failed to load your groups" displayed in red. Root cause is suspected to be a timing/guard issue in the group detail page — the redirect-if-not-member effect was firing before group data had loaded. A fix was applied (guarding on `group` being defined before redirecting) but the error persisted. This is the next thing to investigate.
 
 ### Not Yet Tested With Real Data
-- Group detail page (member management, invite flow, role changes)
 - Event detail page (RSVP, guest list, edit flow)
-- New Group form
 - New Event form
 - Profile edit (routes through signup with `isEdit` param)
 
@@ -116,5 +129,6 @@ src/constants/               ← Copied directly from web project (no changes ne
 ---
 
 ## What's Next
-- End-to-end testing of each screen with real data (suggested order: New Group → New Event → Group detail → Event detail → Profile edit)
-- UI polish pass
+1. **Debug group detail load failure** after accepting an invite — investigate whether the error is coming from the query itself or the redirect guard, and confirm the fix applied last session is correct
+2. End-to-end testing of remaining screens (suggested order: New Event → Event detail → Profile edit)
+3. UI polish pass

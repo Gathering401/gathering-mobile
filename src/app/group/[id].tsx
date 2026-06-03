@@ -123,14 +123,16 @@ const GroupDisplay = () => {
     }, [group, searchMembers]);
 
     useEffect(() => {
-        if (error) router.replace('/');
+        if (error) {
+            router.replace('/');
+        }
     }, [error]);
 
     useEffect(() => {
-        if (!isLoading && !error && group && user && !activeMembers.find(m => m.id === user.id)) {
+        if (!isLoading && !error && group && currentRole === undefined) {
             router.replace('/');
         }
-    }, [isLoading, group, activeMembers]);
+    }, [isLoading, group, currentRole]);
 
     if (isLoading || !user) {
         return <View style={styles.centered}><ActivityIndicator size="large" /></View>;
@@ -138,12 +140,9 @@ const GroupDisplay = () => {
 
     if (error) return null;
 
-    const currentMember = activeMembers.find(m => m.id === user.id);
-    if (!currentMember) return null;
-
-    const isOwner = currentMember.role === Role.owner;
-    const isAdmin = currentMember.role === Role.admin || isOwner;
-    const isCreator = currentMember.role === Role.creator || isAdmin;
+    const isOwner = currentRole === Role.owner;
+    const isAdmin = currentRole === Role.admin || isOwner;
+    const isCreator = currentRole === Role.creator || isAdmin;
     const hasOtherMembers = activeMembers.filter(m => m.role !== Role.owner).length > 0 || pendingMembers.length > 0;
 
     const confirmRemoveMember = (id: number, username: string) => {
