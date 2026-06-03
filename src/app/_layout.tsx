@@ -14,7 +14,6 @@ export default function RootLayout() {
     useEffect(() => {
         const checkAuth = async () => {
             const token = await SecureStore.getItemAsync('token');
-            console.log('token:', token);
             const inAuthGroup = segments[0] === 'login' || segments[0] === 'signup';
 
             if (!token) {
@@ -33,10 +32,6 @@ export default function RootLayout() {
                 const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/profile`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
-
-                const body = await response.json();
-                console.log('profile status:', response.status);
-                console.log('profile body:', JSON.stringify(body));
 
                 if (!response.ok) {
                     await SecureStore.deleteItemAsync('token');

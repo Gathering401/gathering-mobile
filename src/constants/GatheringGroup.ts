@@ -1,5 +1,6 @@
 import {GroupUser} from "./GroupUser";
 import {Event} from "./Event";
+import {InviteStatus} from "./enums/InviteStatus";
 
 export interface GatheringGroup {
     id?: number;
@@ -8,4 +9,6 @@ export interface GatheringGroup {
     public: boolean;
     members?: GroupUser[];
     events: Event[];
+    inviteStatus: InviteStatus;
+    invitedByGroup?: boolean;
 }

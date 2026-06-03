@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "gathering-mobile-2",
-    "slug": "gathering-mobile-2",
+    "name": "gathering-mobile",
+    "slug": "gathering-mobile",
     "version": "1.0.0",
     "scheme": "gathering",
     "orientation": "portrait",

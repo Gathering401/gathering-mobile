@@ -80,6 +80,9 @@ src/constants/               ← Copied directly from web project (no changes ne
 - All screens converted and rendering
 - API communication over local network
 - Calendar with event dots and date selection on the main screen
+- Token validation against the API on startup via `GET /profile`
+- Logout button on profile screen (clears token + user from SecureStore, redirects to login)
+- GitHub repo wired up (Gathering-Mobile, default branch: main)
 
 ### Not Yet Tested With Real Data
 - Group detail page (member management, invite flow, role changes)
@@ -89,27 +92,29 @@ src/constants/               ← Copied directly from web project (no changes ne
 - Profile edit (routes through signup with `isEdit` param)
 
 ### Known Gaps
-- **No token validation against the API on startup** — the auth gate only checks that a token *exists* in SecureStore, not that it is still valid. An expired or invalid token will pass the gate and fail silently on data fetches.
-- **No logout button** on the profile screen
 - Minor UI details to polish (self-identified, low priority)
 
 ---
 
+## API Changes Made
+
+### `GET /profile` endpoint
+- Added `verifyAccessToken` to `auth/controller.ts` using `jwt.verify` (validates signature and expiry, unlike the existing `decodeAccessToken` which uses `jwt.decode`)
+- Updated `isAuthenticated` middleware to use `verifyAccessToken` instead of `decodeAccessToken`
+- Fixed `isAuthenticated` to read `userId` directly off the verified result (not `verified.payload.userId` — `jwt.verify` returns the payload directly, not wrapped)
+- Added `GET /profile` route to `auth/routes.ts`
+- Added `getProfile` controller to `auth/controller.ts` — requires valid Bearer token, returns user without password
+- Fixed Express error handler placement in `app.ts` — moved to after route registrations so it can actually catch errors
+
+### Auth Gate (`src/app/_layout.tsx`)
+- On startup, after reading the token from SecureStore, makes a request to `GET /profile`
+- If the token is missing → redirect to login
+- If already in auth screens with a valid token → redirect to tabs (skips API call to avoid race condition)
+- If `GET /profile` returns non-OK → clear token and user from SecureStore, redirect to login
+- If network error → fail open (let user through) to avoid boot-looping offline
+
+---
+
 ## What's Next
-
-### Session Priority: `/profile` API Endpoint
-Build a `GET /profile` endpoint on the API that:
-- Requires a valid Bearer token in the Authorization header
-- Validates the token against the JWT secret
-- Returns the current user's data on success
-- Returns 401 on invalid or expired token
-
-Then wire it up in `src/app/_layout.tsx`:
-- On app startup, after reading the token from SecureStore, make a request to `GET /profile`
-- If 401 is returned → clear the token and redirect to login
-- If successful → optionally refresh the stored user object in SecureStore
-
-### After That
-- Add a logout button to the profile screen (clears token + user from SecureStore, redirects to login)
-- End-to-end testing of each screen with real data
+- End-to-end testing of each screen with real data (suggested order: New Group → New Event → Group detail → Event detail → Profile edit)
 - UI polish pass
