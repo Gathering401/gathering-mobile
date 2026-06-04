@@ -5,8 +5,6 @@ export enum Repetition {
     weekly = 4
 }
 
-export const getRepetitionById = (repetition: Repetition) => Object.entries(Repetition).find(([_, value]) => repetition === value)![0];
-
 export const getRepetitionByValue = (repetition: string) => Object.entries(Repetition).find(([key, _]) => repetition === key)![1];
 
 export const getRepetitionOptions = () => [

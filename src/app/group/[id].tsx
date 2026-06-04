@@ -11,6 +11,7 @@ import { GatheringGroup } from '../../constants/GatheringGroup';
 import { getRoleById, getRoleByValue, getRoleOptions, Role } from '../../constants/enums/Role';
 import { InviteStatus } from '../../constants/enums/InviteStatus';
 import {styles} from "../../styles/group";
+import dayjs from "dayjs";
 
 const GroupDisplay = () => {
     const router = useRouter();
@@ -145,6 +146,13 @@ const GroupDisplay = () => {
     const isCreator = currentRole === Role.creator || isAdmin;
     const hasOtherMembers = activeMembers.filter(m => m.role !== Role.owner).length > 0 || pendingMembers.length > 0;
 
+    const formatEventDate = (dateStr: string) => {
+        const date = dayjs(dateStr);
+        const sixMonthsFromNow = dayjs().add(6, 'month');
+        const format = date.isBefore(sixMonthsFromNow) ? 'MMM D [at] h:mm A' : 'MMM D, YYYY [at] h:mm A';
+        return date.format(format);
+    };
+
     const confirmRemoveMember = (id: number, username: string) => {
         Alert.alert(
             `Remove ${username}?`,
@@ -236,13 +244,11 @@ const GroupDisplay = () => {
                     <Text style={styles.editText}>Edit</Text>
                 </TouchableOpacity>
             )}
-
             <Text style={styles.title}>{group?.name}</Text>
             <Text style={styles.description}>{group?.description}</Text>
             <Text style={styles.owner}>
                 Owned by {activeMembers.find(m => m.role === Role.owner)?.username}
             </Text>
-
             {isAdmin && (
                 <View style={styles.actionRow}>
                     <TouchableOpacity
@@ -263,8 +269,7 @@ const GroupDisplay = () => {
                     )}
                 </View>
             )}
-
-            {activeMembers.length > 0 && (
+            {isAdmin && activeMembers.length > 0 && (
                 <>
                     <Text style={styles.sectionTitle}>Members</Text>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -277,20 +282,36 @@ const GroupDisplay = () => {
                     </ScrollView>
                 </>
             )}
-
             <View style={styles.eventsRow}>
                 <Text style={styles.sectionTitle}>Upcoming Events</Text>
                 {isCreator && (
                     <TouchableOpacity
                         style={styles.button}
-                        onPress={() => router.push('/new-event')}
+                        onPress={() => router.push({ pathname: '/new-event', params: { groupId: String(group?.id) } })}
                     >
                         <Text style={styles.buttonText}>+ New Event</Text>
                     </TouchableOpacity>
                 )}
             </View>
-
-            {/* Members Modal */}
+            {group?.events?.length > 0 ? (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    {group.events.map((event) => (
+                        <TouchableOpacity
+                            key={event.id}
+                            style={styles.eventCard}
+                            onPress={() => router.push(`/event/${event.id}`)}
+                        >
+                            <Text style={styles.eventName}>{event.name}</Text>
+                            {!!event.description && (
+                                <Text style={styles.eventDescription}>{event.description}</Text>
+                            )}
+                            <Text style={styles.eventDate}>{formatEventDate(event.date)}</Text>
+                        </TouchableOpacity>
+                    ))}
+                </ScrollView>
+            ) : (
+                <Text style={styles.emptyText}>No upcoming events right now, get one planned!</Text>
+            )}
             <Modal visible={membersPanelOpened} animationType="slide" onRequestClose={() => setMembersPanelOpened(false)}>
                 <View style={styles.modalContainer}>
                     <Text style={styles.modalTitle}>All Members</Text>
@@ -317,8 +338,6 @@ const GroupDisplay = () => {
                     </TouchableOpacity>
                 </View>
             </Modal>
-
-            {/* Invite Modal */}
             <Modal
                 visible={invitePanelOpened}
                 animationType="slide"

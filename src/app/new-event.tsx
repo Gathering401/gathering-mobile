@@ -12,7 +12,7 @@ import {
     KeyboardAvoidingView, Platform, Modal
 } from 'react-native';
 import { GatheringGroup } from '../constants/GatheringGroup';
-import { Repetition, getRepetitionOptions, getRepetitionByValue, getRepetitionById } from '../constants/enums/Repetition';
+import { Repetition, getRepetitionOptions, getRepetitionByValue } from '../constants/enums/Repetition';
 import {styles} from "../styles/new-event";
 
 interface EventValues {
@@ -173,7 +173,6 @@ const EventForm = () => {
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
             <ScrollView contentContainerStyle={styles.container}>
                 <Text style={styles.title}>{isEditing ? 'Edit Event' : 'New Event'}</Text>
-
                 {(['name', 'description', 'location'] as const).map((field) => (
                     <Controller
                         key={field}
@@ -195,7 +194,6 @@ const EventForm = () => {
                         )}
                     />
                 ))}
-
                 <Controller
                     control={control}
                     name="cost"
@@ -212,7 +210,6 @@ const EventForm = () => {
                         </View>
                     )}
                 />
-
                 <View style={styles.fieldContainer}>
                     <Text style={styles.label}>Date</Text>
                     <TouchableOpacity
@@ -224,21 +221,24 @@ const EventForm = () => {
                         </Text>
                     </TouchableOpacity>
                     {showDatePicker && (
-                        <DateTimePicker
-                            value={selectedDate}
-                            mode="datetime"
-                            display="default"
-                            minimumDate={new Date()}
-                            onChange={(_, date: dayjs) => {
-                                setShowDatePicker(false);
-                                if (date) {
-                                    setValue('date', date);
-                                }
-                            }}
-                        />
+                        <View>
+                            <DateTimePicker
+                                value={selectedDate}
+                                mode="datetime"
+                                display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                                minimumDate={new Date()}
+                                onChange={(_, date) => {
+                                    if (date) {
+                                        setValue('date', date);
+                                    }
+                                }}
+                            />
+                            <TouchableOpacity style={styles.cancelButton} onPress={() => setShowDatePicker(false)}>
+                                <Text style={styles.cancelText}>Done</Text>
+                            </TouchableOpacity>
+                        </View>
                     )}
                 </View>
-
                 <View style={styles.fieldContainer}>
                     <Text style={styles.label}>Repetition</Text>
                     <TouchableOpacity
@@ -246,7 +246,7 @@ const EventForm = () => {
                         onPress={() => !isEditing && setShowRepetitionPicker(true)}
                     >
                         <Text style={{ color: '#333' }}>
-                            {getRepetitionById(selectedRepetition) ?? 'Select repetition'}
+                            {repetitionOptions.find(o => getRepetitionByValue(o.value) === selectedRepetition)?.label ?? 'Select repetition'}
                         </Text>
                     </TouchableOpacity>
                     <Modal visible={showRepetitionPicker} transparent animationType="slide">
@@ -272,12 +272,11 @@ const EventForm = () => {
                         </View>
                     </Modal>
                 </View>
-
                 <View style={styles.fieldContainer}>
                     <Text style={styles.label}>Group</Text>
                     <TouchableOpacity
-                        style={[styles.input, styles.selectButton, isEditing && styles.disabled]}
-                        onPress={() => !isEditing && setShowGroupPicker(true)}
+                        style={[styles.input, styles.selectButton, (isEditing || !!params.groupId) && styles.disabled]}
+                        onPress={() => !(isEditing || !!params.groupId) && setShowGroupPicker(true)}
                     >
                         <Text style={{ color: selectedGroup ? '#333' : '#999' }}>
                             {isLoading ? 'Loading...' : selectedGroup?.name ?? 'Select a group'}
@@ -306,7 +305,6 @@ const EventForm = () => {
                         </View>
                     </Modal>
                 </View>
-
                 <View style={styles.buttonRow}>
                     <TouchableOpacity style={styles.cancelButton} onPress={() => router.back()}>
                         <Text style={styles.cancelText}>Cancel</Text>
@@ -315,7 +313,6 @@ const EventForm = () => {
                         <Text style={styles.submitText}>{isEditing ? 'Save' : 'Submit'}</Text>
                     </TouchableOpacity>
                 </View>
-
                 <Toast />
             </ScrollView>
         </KeyboardAvoidingView>
