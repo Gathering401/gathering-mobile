@@ -12,6 +12,7 @@ import { Event } from '../../constants/Event';
 import { getRsvpLabelFor, getRsvpsForDropdown, Rsvp } from '../../constants/enums/Rsvp';
 import { Role } from '../../constants/enums/Role';
 import {styles} from "../../styles/event";
+import {getRepetitionOptions, Repetition} from "../../constants/enums/Repetition";
 
 const rsvpSortOrder = [Rsvp.attending, Rsvp.maybe, Rsvp.pending, Rsvp.rejected];
 
@@ -22,6 +23,11 @@ const rsvpColor = (rsvp: Rsvp): string => {
         case Rsvp.rejected: return '#fa5252';
         default: return '#868e96';
     }
+};
+
+const getRepetitionLabel = (value: Repetition): string => {
+    const key = Object.keys(Repetition).find(k => Repetition[k as keyof typeof Repetition] === value);
+    return getRepetitionOptions().find(o => o.value === key)?.label ?? 'None';
 };
 
 const EventDisplay = () => {
@@ -157,12 +163,10 @@ const EventDisplay = () => {
                 <Text style={styles.detailLabel}>Price:</Text>
                 <Text style={styles.detailValue}>{event.cost > 0 ? `$${event.cost.toFixed(2)}` : 'FREE'}</Text>
             </View>
-
             <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Repetition:</Text>
-                <Text style={styles.detailValue}>{event.repetition}</Text>
+                <Text style={styles.detailLabel}>How often?</Text>
+                <Text style={styles.detailValue}>{getRepetitionLabel(event.repetition)}</Text>
             </View>
-
             <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Hosted by:</Text>
                 <Text style={styles.detailValue}>{event.host.fullName}</Text>
