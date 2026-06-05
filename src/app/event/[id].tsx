@@ -161,7 +161,7 @@ const EventDisplay = () => {
 
             <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Price:</Text>
-                <Text style={styles.detailValue}>{event.cost > 0 ? `$${event.cost.toFixed(2)}` : 'FREE'}</Text>
+                <Text style={styles.detailValue}>{Number(event.cost) > 0 ? `$${Number(event.cost).toFixed(2)}` : 'FREE'}</Text>
             </View>
             <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>How often?</Text>

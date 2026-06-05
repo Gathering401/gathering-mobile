@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
-import { View, ActivityIndicator } from 'react-native';
+import {View, ActivityIndicator, TouchableOpacity} from 'react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import {Ionicons} from "@expo/vector-icons";
 
 const queryClient = new QueryClient();
 
@@ -58,7 +59,31 @@ export default function RootLayout() {
 
     return (
         <QueryClientProvider client={queryClient}>
-            <Stack />
+            <Stack>
+                <Stack.Screen
+                    name="(tabs)"
+                    options={({ navigation }) => ({
+                        title: 'Gathering',
+                        headerRight: () => {
+                            const state = navigation.getState();
+                            const activeTab = state?.routes[state.index]?.state?.routes[
+                            state?.routes[state.index]?.state?.index ?? 0
+                                ]?.name;
+
+                            if (activeTab !== 'index') return null;
+
+                            return (
+                                <TouchableOpacity
+                                    onPress={() => router.push('/new-event')}
+                                    style={{ marginRight: 16 }}
+                                >
+                                    <Ionicons name="add" size={26} color="#228be6" />
+                                </TouchableOpacity>
+                            );
+                        }
+                    })}
+                />
+            </Stack>
         </QueryClientProvider>
     );
 }
