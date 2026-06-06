@@ -18,13 +18,14 @@ const GroupDisplay = () => {
     const { id: groupId } = useLocalSearchParams();
     const [token, setToken] = useState<string | null>(null);
     const [user, setUser] = useState<any>(null);
-    const [currentRole, setCurrentRole] = useState<Role>();
     const [membersPanelOpened, setMembersPanelOpened] = useState(false);
     const [invitePanelOpened, setInvitePanelOpened] = useState(false);
     const [searchMembers, setSearchMembers] = useState('');
     const [searchInvite, setSearchInvite] = useState('');
     const [debouncedInviteSearch, setDebouncedInviteSearch] = useState('');
     const [invitedUsers, setInvitedUsers] = useState<number[]>([]);
+    const [rolePickerVisible, setRolePickerVisible] = useState(false);
+    const [rolePickerMember, setRolePickerMember] = useState<any>(null);
 
     useEffect(() => {
         SecureStore.getItemAsync('token').then(setToken);
@@ -41,7 +42,7 @@ const GroupDisplay = () => {
         'Authorization': `Bearer ${token}`
     };
 
-    const { isLoading, data: group, error, refetch }: UseQueryResult = useQuery<GatheringGroup>({
+    const { isLoading, data, error, refetch }: UseQueryResult = useQuery<{ group: GatheringGroup, currentRole: Role }>({
         queryKey: [`groupId-${groupId}`],
         enabled: !!token,
         queryFn: async () => {
@@ -51,12 +52,13 @@ const GroupDisplay = () => {
             });
             const data = await response.json();
             if (data.success) {
-                setCurrentRole(data.currentRole);
-                return data.response;
+                return { group: data.response, currentRole: data.currentRole };
             }
             throw new Error(data.error);
         }
     });
+    const group = data?.group;
+    const currentRole = data?.currentRole;
 
     const { mutate: removeMember } = useMutation({
         mutationFn: async (userId: number) => {
@@ -105,6 +107,18 @@ const GroupDisplay = () => {
                 setInvitedUsers(prev => [...prev, userId]);
             } else {
                 throw new Error('Failed to invite user');
+            }
+        }
+    });
+
+    const { mutate: respondToRequest } = useMutation({
+        mutationFn: async ({ userId, accepted }: { userId: number, accepted: boolean }) => {
+            const response = await fetch(
+                `${process.env.EXPO_PUBLIC_API_URL}/group/request-response?id=${groupId}&userId=${userId}&accepted=${accepted}`,
+                { method: 'PUT', headers: authHeader }
+            );
+            if (response.ok) {
+                await refetch();
             }
         }
     });
@@ -194,32 +208,42 @@ const GroupDisplay = () => {
                 )}
                 {!isPending && m.role !== Role.owner && m.id !== user.id && (
                     <View style={styles.roleRow}>
-                        {roleOptions.map((opt: { label: string; value: string }) => (
+                        {!isPending && m.role !== Role.owner && m.id !== user.id && (
                             <TouchableOpacity
-                                key={opt.value}
-                                style={[styles.roleChip, getRoleById(m.role) === opt.value && styles.roleChipActive]}
-                                onPress={() => {
-                                    if (opt.value === 'owner') {
-                                        confirmChangeOwner(m.id, m.username);
-                                    } else {
-                                        updateMember({ userId: m.id, role: getRoleByValue(opt.value) });
-                                    }
-                                }}
+                                style={[styles.input, styles.selectButton]}
+                                onPress={() => { setRolePickerMember(m); setRolePickerVisible(true); }}
                             >
-                                <Text style={[styles.roleChipText, getRoleById(m.role) === opt.value && styles.roleChipTextActive]}>
-                                    {opt.label}
+                                <Text style={{ color: '#333' }}>
+                                    {getRoleOptions(currentRole!).find((o: { label: string; value: string }) => o.value === getRoleById(m.role))!.label}
                                 </Text>
                             </TouchableOpacity>
-                        ))}
+                        )}
                     </View>
                 )}
                 {m.id !== user.id && (
-                    <TouchableOpacity
-                        style={styles.removeButton}
-                        onPress={() => confirmRemoveMember(m.id, m.username)}
-                    >
-                        <Text style={styles.removeText}>{isPending ? 'Decline' : 'Remove'}</Text>
-                    </TouchableOpacity>
+                    isPending ? (
+                        <View style={styles.rejectionButton}>
+                            <TouchableOpacity
+                                style={styles.button}
+                                onPress={() => respondToRequest({ userId: m.id, accepted: true })}
+                            >
+                                <Text style={styles.buttonText}>Accept</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.removeButton}
+                                onPress={() => respondToRequest({ userId: m.id, accepted: false })}
+                            >
+                                <Text style={styles.removeText}>Decline</Text>
+                            </TouchableOpacity>
+                        </View>
+                    ) : (
+                        <TouchableOpacity
+                            style={styles.removeButton}
+                            onPress={() => confirmRemoveMember(m.id, m.username)}
+                        >
+                            <Text style={styles.removeText}>Remove</Text>
+                        </TouchableOpacity>
+                    )
                 )}
             </View>
         );
@@ -380,6 +404,36 @@ const GroupDisplay = () => {
                     >
                         <Text style={styles.closeButtonText}>Close</Text>
                     </TouchableOpacity>
+                </View>
+            </Modal>
+            <Modal visible={rolePickerVisible} transparent animationType="slide">
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Change Role</Text>
+                        {getRoleOptions(currentRole!).map((opt: { label: string; value: string }) => (
+                            <TouchableOpacity
+                                key={opt.value}
+                                style={styles.modalOption}
+                                onPress={() => {
+                                    if (opt.value === 'owner') {
+                                        confirmChangeOwner(rolePickerMember.id, rolePickerMember.username);
+                                    } else {
+                                        updateMember({ userId: rolePickerMember.id, role: getRoleByValue(opt.value) });
+                                    }
+                                    setRolePickerVisible(false);
+                                    setRolePickerMember(null);
+                                }}
+                            >
+                                <Text style={styles.modalOptionText}>{opt.label}</Text>
+                            </TouchableOpacity>
+                        ))}
+                        <TouchableOpacity onPress={() => {
+                            setRolePickerVisible(false);
+                            setRolePickerMember(null);
+                        }}>
+                            <Text style={styles.modalCancel}>Cancel</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </Modal>
         </ScrollView>

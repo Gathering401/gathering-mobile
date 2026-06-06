@@ -4,7 +4,7 @@ import * as SecureStore from 'expo-secure-store';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
     View, Text, TextInput, TouchableOpacity,
-    ScrollView, ActivityIndicator
+    ScrollView, ActivityIndicator, RefreshControl
 } from 'react-native';
 import { GatheringGroup } from '../../constants/GatheringGroup';
 import GroupCard from "../../components/GroupCard";
@@ -16,6 +16,7 @@ const Groups = () => {
     const [token, setToken] = useState<string | null>(null);
     const [search, setSearch] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
+    const [refreshing, setRefreshing] = useState(false);
 
     useEffect(() => {
         SecureStore.getItemAsync('token').then(setToken);
@@ -56,10 +57,19 @@ const Groups = () => {
                 headers: authHeader
             });
             const data = await res.json();
-            if (data.success) return data.response;
+            if (data.success) {
+                return data.response;
+            }
             throw new Error(data.error);
         }
     });
+
+    const onRefresh = async () => {
+        setRefreshing(true);
+        await queryClient.invalidateQueries({ queryKey: ['groups-my'] });
+        await queryClient.invalidateQueries({ queryKey: ['groups-available'] });
+        setRefreshing(false);
+    };
 
     const handleInviteResponse = async (groupId: number, accepted: boolean) => {
         const res = await fetch(
@@ -67,11 +77,26 @@ const Groups = () => {
             { method: 'PUT', headers: authHeader }
         );
         const data = await res.json();
-
-        if (!data.success) {
-            throw new Error(data.error);
-        }
+        if (!data.success) throw new Error(data.error);
         await queryClient.invalidateQueries({ queryKey: ['groups-my'], exact: true });
+    };
+
+    const handleJoin = async (groupId: number) => {
+        const res = await fetch(
+            `${process.env.EXPO_PUBLIC_API_URL}/group/request-to-join?id=${groupId}`,
+            { method: 'POST', headers: authHeader }
+        );
+        const data = await res.json();
+        if (data.success) {
+            const group = discoverableGroups.find(g => g.id === groupId);
+            if (group?.public) {
+                await queryClient.invalidateQueries({ queryKey: ['groups-my'] });
+                await queryClient.invalidateQueries({ queryKey: ['groups-available'] });
+                router.push(`/group/${groupId}`);
+            } else {
+                await queryClient.invalidateQueries({ queryKey: ['groups-available'] });
+            }
+        }
     };
 
     const filteredJoinedGroups = joinedGroups.filter(g =>
@@ -79,7 +104,10 @@ const Groups = () => {
     );
 
     return (
-        <ScrollView contentContainerStyle={styles.container}>
+        <ScrollView
+            contentContainerStyle={styles.container}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        >
             <View style={styles.header}>
                 <Text style={styles.title}>Groups</Text>
                 <TouchableOpacity style={styles.button} onPress={() => router.push('/new-group')}>
@@ -120,6 +148,7 @@ const Groups = () => {
                     key={group.id}
                     group={group}
                     onPress={() => router.push(`/group/${group.id}`)}
+                    onJoin={() => handleJoin(group.id)}
                 />
             ))}
             {!discoverLoading && discoverableGroups.length === 0 && (

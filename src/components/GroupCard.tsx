@@ -1,16 +1,17 @@
 import {GatheringGroup} from "../constants/GatheringGroup";
 import {useState} from "react";
 import {InviteStatus} from "../constants/enums/InviteStatus";
-import {StyleSheet, Text, TouchableOpacity, View} from "react-native";
+import {Text, TouchableOpacity, View} from "react-native";
 import {styles} from "../styles/groupCard";
 
 interface GroupCardProps {
     group: GatheringGroup;
     onPress: () => void;
     onInviteResponse?: (accepted: boolean) => Promise<void>;
+    onJoin?: () => Promise<void>;
 }
 
-const GroupCard = ({ group, onPress, onInviteResponse }: GroupCardProps) => {
+const GroupCard = ({ group, onPress, onInviteResponse, onJoin }: GroupCardProps) => {
     const [responding, setResponding] = useState(false);
 
     const isPendingInvite = group.inviteStatus === InviteStatus.pending && group.invitedByGroup;
@@ -26,6 +27,50 @@ const GroupCard = ({ group, onPress, onInviteResponse }: GroupCardProps) => {
         }
     };
 
+    const handleJoin = async () => {
+        if (!onJoin) {
+            return;
+        }
+        setResponding(true);
+        try {
+            await onJoin();
+        } finally {
+            setResponding(false);
+        }
+    };
+
+    if (onJoin) {
+        const isRejected = ([InviteStatus.rejected_by_group, InviteStatus.rejected_by_user] as InviteStatus[]).includes(group.inviteStatus);
+        const isPending = group.inviteStatus === InviteStatus.pending;
+
+        return (
+            <View style={styles.card}>
+                <View style={styles.cardRow}>
+                    <View style={styles.cardText}>
+                        <Text style={styles.cardTitle}>{group.name}</Text>
+                        <Text style={styles.cardDescription}>{group.description}</Text>
+                    </View>
+                    {isRejected ? (
+                        <View style={[styles.actionButton, styles.rejectedBadge]}>
+                            <Text style={styles.rejectedBadgeText}>Rejected</Text>
+                        </View>
+                    ) : isPending ? (
+                        <View style={[styles.actionButton, styles.pendingBadge]}>
+                            <Text style={styles.pendingBadgeText}>Pending</Text>
+                        </View>
+                    ) : (
+                        <TouchableOpacity
+                            style={[styles.actionButton, styles.joinButton]}
+                            onPress={handleJoin}
+                            disabled={responding}
+                        >
+                            <Text style={styles.joinButtonText}>Join</Text>
+                        </TouchableOpacity>
+                    )}
+                </View>
+            </View>
+        );
+    }
     if (isPendingInvite) {
         return (
             <View style={styles.card}>
@@ -54,7 +99,6 @@ const GroupCard = ({ group, onPress, onInviteResponse }: GroupCardProps) => {
             </View>
         );
     }
-
     if (isPendingRequest) {
         return (
             <View style={[styles.card, styles.cardMuted]}>
@@ -70,7 +114,6 @@ const GroupCard = ({ group, onPress, onInviteResponse }: GroupCardProps) => {
             </View>
         );
     }
-
     return (
         <TouchableOpacity style={styles.card} onPress={onPress}>
             <View style={styles.cardRow}>
@@ -78,7 +121,7 @@ const GroupCard = ({ group, onPress, onInviteResponse }: GroupCardProps) => {
                     <Text style={styles.cardTitle}>{group.name}</Text>
                     <Text style={styles.cardDescription}>{group.description}</Text>
                 </View>
-                {group.public && (
+                {Boolean(group.public) && (
                     <View style={styles.badge}>
                         <Text style={styles.badgeText}>Public</Text>
                     </View>

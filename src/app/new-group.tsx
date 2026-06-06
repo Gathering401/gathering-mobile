@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useForm, Controller } from 'react-hook-form';
+import { useQueryClient } from '@tanstack/react-query';
 import Toast from 'react-native-toast-message';
 import {
     View, Text, TextInput, TouchableOpacity,
     Switch, ScrollView, KeyboardAvoidingView, Platform
 } from 'react-native';
-import {styles} from "../styles/new-group";
+import { styles } from "../styles/new-group";
 
 interface GroupValues {
     name: string;
@@ -18,6 +19,7 @@ interface GroupValues {
 const GroupForm = () => {
     const router = useRouter();
     const params = useLocalSearchParams();
+    const queryClient = useQueryClient();
     const [token, setToken] = useState<string | null>(null);
 
     const isEditing = !!params.id;
@@ -30,7 +32,7 @@ const GroupForm = () => {
         defaultValues: {
             name: (params.name as string) ?? '',
             description: (params.description as string) ?? '',
-            public: params.public === 'true' ? true : params.public === 'false' ? false : true
+            public: params.public !== undefined ? params.public === 'true' : false
         }
     });
 
@@ -54,6 +56,7 @@ const GroupForm = () => {
         const data = await response.json();
 
         if (data.success) {
+            await queryClient.invalidateQueries({ queryKey: ['groups-my'] });
             router.replace(isEditing ? `/group/${params.id}` : `/group/${data.response.id}`);
         } else {
             Toast.show({ type: 'error', text1: 'Error', text2: 'Something went wrong. Please try again.' });
@@ -67,7 +70,6 @@ const GroupForm = () => {
         >
             <ScrollView contentContainerStyle={styles.container}>
                 <Text style={styles.title}>{isEditing ? 'Edit Group' : 'New Group'}</Text>
-
                 <Controller
                     control={control}
                     name="name"
@@ -84,7 +86,6 @@ const GroupForm = () => {
                         </View>
                     )}
                 />
-
                 <Controller
                     control={control}
                     name="description"
@@ -103,7 +104,6 @@ const GroupForm = () => {
                         </View>
                     )}
                 />
-
                 <Controller
                     control={control}
                     name="public"
@@ -121,7 +121,6 @@ const GroupForm = () => {
                         </View>
                     )}
                 />
-
                 <View style={styles.buttonRow}>
                     <TouchableOpacity
                         style={styles.cancelButton}
@@ -136,7 +135,6 @@ const GroupForm = () => {
                         <Text style={styles.submitText}>{isEditing ? 'Save' : 'Submit'}</Text>
                     </TouchableOpacity>
                 </View>
-
                 <Toast />
             </ScrollView>
         </KeyboardAvoidingView>
