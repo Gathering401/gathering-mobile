@@ -77,7 +77,9 @@ const Groups = () => {
             { method: 'PUT', headers: authHeader }
         );
         const data = await res.json();
-        if (!data.success) throw new Error(data.error);
+        if (!data.success) {
+            throw new Error(data.error);
+        }
         await queryClient.invalidateQueries({ queryKey: ['groups-my'], exact: true });
     };
 
@@ -89,12 +91,10 @@ const Groups = () => {
         const data = await res.json();
         if (data.success) {
             const group = discoverableGroups.find(g => g.id === groupId);
+            await queryClient.invalidateQueries({ queryKey: ['groups-my'] });
+            await queryClient.invalidateQueries({ queryKey: ['groups-available'] });
             if (group?.public) {
-                await queryClient.invalidateQueries({ queryKey: ['groups-my'] });
-                await queryClient.invalidateQueries({ queryKey: ['groups-available'] });
                 router.push(`/group/${groupId}`);
-            } else {
-                await queryClient.invalidateQueries({ queryKey: ['groups-available'] });
             }
         }
     };

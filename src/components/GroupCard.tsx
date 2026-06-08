@@ -18,7 +18,9 @@ const GroupCard = ({ group, onPress, onInviteResponse, onJoin }: GroupCardProps)
     const isPendingRequest = group.inviteStatus === InviteStatus.pending && !group.invitedByGroup;
 
     const handleResponse = async (accepted: boolean) => {
-        if (!onInviteResponse) return;
+        if (!onInviteResponse) {
+            return;
+        }
         setResponding(true);
         try {
             await onInviteResponse(accepted);

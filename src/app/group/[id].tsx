@@ -374,6 +374,8 @@ const GroupDisplay = () => {
                         placeholder="Search by username..."
                         value={searchInvite}
                         onChangeText={setSearchInvite}
+                        autoCorrect={false}
+                        autoCapitalize="none"
                     />
                     <ScrollView>
                         {loadingSearch && <ActivityIndicator style={{ marginVertical: 8 }} />}
