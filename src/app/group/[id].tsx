@@ -191,7 +191,6 @@ const GroupDisplay = () => {
 
     const renderMemberCard = (m: any) => {
         const isPending = m.inviteStatus === InviteStatus.pending;
-        const roleOptions = getRoleOptions(currentRole!);
 
         return (
             <View key={m.id} style={styles.memberCard}>
@@ -208,16 +207,14 @@ const GroupDisplay = () => {
                 )}
                 {!isPending && m.role !== Role.owner && m.id !== user.id && (
                     <View style={styles.roleRow}>
-                        {!isPending && m.role !== Role.owner && m.id !== user.id && (
-                            <TouchableOpacity
-                                style={[styles.input, styles.selectButton]}
-                                onPress={() => { setRolePickerMember(m); setRolePickerVisible(true); }}
-                            >
-                                <Text style={{ color: '#333' }}>
-                                    {getRoleOptions(currentRole!).find((o: { label: string; value: string }) => o.value === getRoleById(m.role))!.label}
-                                </Text>
-                            </TouchableOpacity>
-                        )}
+                        <TouchableOpacity
+                            style={[styles.input, styles.selectButton]}
+                            onPress={() => { setRolePickerMember(m); setRolePickerVisible(true); }}
+                        >
+                            <Text style={{ color: '#333' }}>
+                                {getRoleOptions(currentRole!).find((o: { label: string; value: string }) => o.value === getRoleById(m.role))!.label}
+                            </Text>
+                        </TouchableOpacity>
                     </View>
                 )}
                 {m.id !== user.id && (
@@ -336,76 +333,81 @@ const GroupDisplay = () => {
             ) : (
                 <Text style={styles.emptyText}>No upcoming events right now, get one planned!</Text>
             )}
-            <Modal visible={membersPanelOpened} animationType="slide" onRequestClose={() => setMembersPanelOpened(false)}>
-                <View style={styles.modalContainer}>
-                    <Text style={styles.modalTitle}>All Members</Text>
-                    <TextInput
-                        style={styles.searchInput}
-                        placeholder="Search members..."
-                        value={searchMembers}
-                        onChangeText={setSearchMembers}
-                    />
-                    <ScrollView>
-                        {pendingMembers.length > 0 && (
-                            <Text style={styles.modalSectionLabel}>Pending Requests ({pendingMembers.length})</Text>
-                        )}
-                        {filteredModalMembers
-                            .filter(m => m.inviteStatus === InviteStatus.pending)
-                            .map(renderMemberCard)}
-                        <Text style={styles.modalSectionLabel}>Members</Text>
-                        {filteredModalMembers
-                            .filter(m => m.inviteStatus !== InviteStatus.pending && m.id !== user.id)
-                            .map(renderMemberCard)}
-                    </ScrollView>
-                    <TouchableOpacity style={styles.closeButton} onPress={() => setMembersPanelOpened(false)}>
-                        <Text style={styles.closeButtonText}>Close</Text>
-                    </TouchableOpacity>
+            <Modal visible={membersPanelOpened} transparent animationType="slide" onRequestClose={() => setMembersPanelOpened(false)}>
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>All Members</Text>
+                        <TextInput
+                            style={styles.searchInput}
+                            placeholder="Search members..."
+                            value={searchMembers}
+                            onChangeText={setSearchMembers}
+                        />
+                        <ScrollView>
+                            {pendingMembers.length > 0 && (
+                                <Text style={styles.modalSectionLabel}>Pending Requests ({pendingMembers.length})</Text>
+                            )}
+                            {filteredModalMembers
+                                .filter(m => m.inviteStatus === InviteStatus.pending)
+                                .map(renderMemberCard)}
+                            <Text style={styles.modalSectionLabel}>Members</Text>
+                            {filteredModalMembers
+                                .filter(m => m.inviteStatus !== InviteStatus.pending && m.id !== user.id)
+                                .map(renderMemberCard)}
+                        </ScrollView>
+                        <TouchableOpacity style={styles.closeButton} onPress={() => setMembersPanelOpened(false)}>
+                            <Text style={styles.closeButtonText}>Close</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </Modal>
             <Modal
                 visible={invitePanelOpened}
+                transparent
                 animationType="slide"
                 onRequestClose={() => { setInvitePanelOpened(false); setSearchInvite(''); setInvitedUsers([]); }}
             >
-                <View style={styles.modalContainer}>
-                    <Text style={styles.modalTitle}>Invite User</Text>
-                    <TextInput
-                        style={styles.searchInput}
-                        placeholder="Search by username..."
-                        value={searchInvite}
-                        onChangeText={setSearchInvite}
-                        autoCorrect={false}
-                        autoCapitalize="none"
-                    />
-                    <ScrollView>
-                        {loadingSearch && <ActivityIndicator style={{ marginVertical: 8 }} />}
-                        {!loadingSearch && searchResults?.map((u: { id: number; username: string; invite_status: number | null }) => {
-                            const alreadyInvited = u.invite_status !== null || invitedUsers.includes(u.id);
-                            return (
-                                <View key={u.id} style={styles.inviteRow}>
-                                    <Text>{u.username}</Text>
-                                    <TouchableOpacity
-                                        style={[styles.inviteButton, alreadyInvited && styles.inviteButtonDisabled]}
-                                        disabled={alreadyInvited}
-                                        onPress={() => inviteUser(u.id)}
-                                    >
-                                        <Text style={styles.inviteButtonText}>
-                                            {alreadyInvited ? 'Invite Sent' : 'Send Invite'}
-                                        </Text>
-                                    </TouchableOpacity>
-                                </View>
-                            );
-                        })}
-                        {!loadingSearch && debouncedInviteSearch && !searchResults?.length && (
-                            <Text style={styles.emptyText}>No users found</Text>
-                        )}
-                    </ScrollView>
-                    <TouchableOpacity
-                        style={styles.closeButton}
-                        onPress={() => { setInvitePanelOpened(false); setSearchInvite(''); setInvitedUsers([]); }}
-                    >
-                        <Text style={styles.closeButtonText}>Close</Text>
-                    </TouchableOpacity>
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Invite User</Text>
+                        <TextInput
+                            style={styles.searchInput}
+                            placeholder="Search by username..."
+                            value={searchInvite}
+                            onChangeText={setSearchInvite}
+                            autoCorrect={false}
+                            autoCapitalize="none"
+                        />
+                        <ScrollView>
+                            {loadingSearch && <ActivityIndicator style={{ marginVertical: 8 }} />}
+                            {!loadingSearch && searchResults?.map((u: { id: number; username: string; invite_status: number | null }) => {
+                                const alreadyInvited = u.invite_status !== null || invitedUsers.includes(u.id);
+                                return (
+                                    <View key={u.id} style={styles.inviteRow}>
+                                        <Text>{u.username}</Text>
+                                        <TouchableOpacity
+                                            style={[styles.inviteButton, alreadyInvited && styles.inviteButtonDisabled]}
+                                            disabled={alreadyInvited}
+                                            onPress={() => inviteUser(u.id)}
+                                        >
+                                            <Text style={styles.inviteButtonText}>
+                                                {alreadyInvited ? 'Invite Sent' : 'Send Invite'}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                );
+                            })}
+                            {!loadingSearch && debouncedInviteSearch && !searchResults?.length && (
+                                <Text style={styles.emptyText}>No users found</Text>
+                            )}
+                        </ScrollView>
+                        <TouchableOpacity
+                            style={styles.closeButton}
+                            onPress={() => { setInvitePanelOpened(false); setSearchInvite(''); setInvitedUsers([]); }}
+                        >
+                            <Text style={styles.closeButtonText}>Close</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </Modal>
             <Modal visible={rolePickerVisible} transparent animationType="slide">

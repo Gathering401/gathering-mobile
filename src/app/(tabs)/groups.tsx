@@ -114,34 +114,35 @@ const Groups = () => {
                     <Text style={styles.buttonText}>New Group</Text>
                 </TouchableOpacity>
             </View>
-
             <TextInput
                 style={styles.searchInput}
                 placeholder="Search groups..."
                 value={search}
                 onChangeText={setSearch}
             />
-
             {joinedLoading && <ActivityIndicator style={{ marginVertical: 8 }} />}
             {!!joinedError && <Text style={styles.errorText}>Failed to load your groups.</Text>}
-
-            {filteredJoinedGroups.map((group) => (
-                <GroupCard
-                    key={group.id}
-                    group={group}
-                    onPress={() => router.push(`/group/${group.id}`)}
-                    onInviteResponse={(accepted) => handleInviteResponse(group.id, accepted)}
-                />
-            ))}
-            {!joinedLoading && filteredJoinedGroups.length === 0 && (
-                <Text style={styles.emptyText}>
-                    {debouncedSearch ? 'No joined groups match your search.' : 'No groups yet — create one to get started.'}
-                </Text>
-            )}
-
+            <ScrollView
+                style={styles.joinedGroupsList}
+                scrollEnabled={filteredJoinedGroups.length > 3}
+                nestedScrollEnabled
+            >
+                {filteredJoinedGroups.map((group) => (
+                    <GroupCard
+                        key={group.id}
+                        group={group}
+                        onPress={() => router.push(`/group/${group.id}`)}
+                        onInviteResponse={(accepted) => handleInviteResponse(group.id, accepted)}
+                    />
+                ))}
+                {!joinedLoading && filteredJoinedGroups.length === 0 && (
+                    <Text style={styles.emptyText}>
+                        {debouncedSearch ? 'No joined groups match your search.' : 'No groups yet — create one to get started.'}
+                    </Text>
+                )}
+            </ScrollView>
             <View style={styles.divider} />
             <Text style={styles.sectionTitle}>Join another group</Text>
-
             {discoverLoading && <ActivityIndicator style={{ marginVertical: 8 }} />}
             {discoverableGroups.map((group) => (
                 <GroupCard

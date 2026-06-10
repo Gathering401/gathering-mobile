@@ -1,16 +1,13 @@
-import { useState, useEffect } from 'react';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import {useEffect, useState} from 'react';
+import {useLocalSearchParams, useRouter} from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import {useMutation, useQuery, UseQueryResult} from '@tanstack/react-query';
-import {
-    View, Text, TouchableOpacity, ScrollView,
-    ActivityIndicator, Modal, Clipboard
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import {ActivityIndicator, Clipboard, Modal, ScrollView, Text, TouchableOpacity, View} from 'react-native';
+import {Ionicons} from '@expo/vector-icons';
 import dayjs from 'dayjs';
-import { Event } from '../../constants/Event';
-import { getRsvpLabelFor, getRsvpsForDropdown, Rsvp } from '../../constants/enums/Rsvp';
-import { Role } from '../../constants/enums/Role';
+import {Event} from '../../constants/Event';
+import {getRsvpLabelFor, getRsvpsForDropdown, Rsvp} from '../../constants/enums/Rsvp';
+import {Role} from '../../constants/enums/Role';
 import {styles} from "../../styles/event";
 import {getRepetitionOptions, Repetition} from "../../constants/enums/Repetition";
 
@@ -26,8 +23,12 @@ const rsvpColor = (rsvp: Rsvp): string => {
 };
 
 const getRepetitionLabel = (value: Repetition): string => {
+    if(value === Repetition.none) {
+        return 'Just once'
+    }
+
     const key = Object.keys(Repetition).find(k => Repetition[k as keyof typeof Repetition] === value);
-    return getRepetitionOptions().find(o => o.value === key)?.label ?? 'None';
+    return getRepetitionOptions().find(o => o.value === key)?.label ?? 'Just once';
 };
 
 const EventDisplay = () => {
@@ -61,7 +62,9 @@ const EventDisplay = () => {
                 headers: authHeader
             });
             const data = await response.json();
-            if (data.success) return data.response;
+            if (data.success) {
+                return data.response;
+            }
             throw new Error(data.error);
         }
     });
@@ -77,14 +80,18 @@ const EventDisplay = () => {
     });
 
     useEffect(() => {
-        if (error) router.replace('/');
+        if (error) {
+            router.replace('/');
+        }
     }, [error]);
 
     if (isLoading || !user) {
         return <View style={styles.centered}><ActivityIndicator size="large" /></View>;
     }
 
-    if (!event) return null;
+    if (!event) {
+        return null;
+    }
 
     const myRsvp = event?.rsvps?.find(r => r.userId === user.id);
     const isHost = event?.host?.userId === user.id;
@@ -138,19 +145,15 @@ const EventDisplay = () => {
                     <Text style={styles.editText}>Edit</Text>
                 </TouchableOpacity>
             )}
-
             <Text style={styles.title}>{event.name}</Text>
-
             <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>What for?</Text>
                 <Text style={styles.detailValue}>{event.description}</Text>
             </View>
-
             <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>When?</Text>
                 <Text style={styles.detailValue}>{dayjs(event.date).format('dddd MMM DD, YYYY [at] h:mm A')}</Text>
             </View>
-
             <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Where?</Text>
                 <TouchableOpacity onPress={handleCopyLocation}>
@@ -158,7 +161,6 @@ const EventDisplay = () => {
                     {locationCopied && <Text style={styles.copiedLabel}>Copied!</Text>}
                 </TouchableOpacity>
             </View>
-
             <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Price:</Text>
                 <Text style={styles.detailValue}>{Number(event.cost) > 0 ? `$${Number(event.cost).toFixed(2)}` : 'FREE'}</Text>
@@ -176,7 +178,6 @@ const EventDisplay = () => {
                     </TouchableOpacity>
                 )}
             </View>
-
             <View style={styles.rsvpRow}>
                 <Text style={styles.detailLabel}>My RSVP:</Text>
                 <TouchableOpacity
@@ -188,8 +189,6 @@ const EventDisplay = () => {
                     </Text>
                 </TouchableOpacity>
             </View>
-
-            {/* RSVP Picker Modal */}
             <Modal visible={showRsvpPicker} transparent animationType="slide">
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
@@ -212,8 +211,6 @@ const EventDisplay = () => {
                     </View>
                 </View>
             </Modal>
-
-            {/* Edit Series Modal */}
             <Modal visible={editModalOpened} transparent animationType="slide">
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
@@ -237,8 +234,6 @@ const EventDisplay = () => {
                     </View>
                 </View>
             </Modal>
-
-            {/* Guest List Modal */}
             {canEdit && (
                 <Modal visible={guestListOpened} animationType="slide" onRequestClose={() => setGuestListOpened(false)}>
                     <View style={styles.fullModalContainer}>

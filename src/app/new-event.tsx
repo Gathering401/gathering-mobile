@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useForm, Controller } from 'react-hook-form';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Toast from 'react-native-toast-message';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import dayjs from 'dayjs';
@@ -28,6 +28,7 @@ interface EventValues {
 const EventForm = () => {
     const router = useRouter();
     const params = useLocalSearchParams();
+    const queryClient = useQueryClient();
     const [token, setToken] = useState<string | null>(null);
     const [user, setUser] = useState<any>(null);
     const [showDatePicker, setShowDatePicker] = useState(false);
@@ -157,6 +158,10 @@ const EventForm = () => {
         const data = await response.json();
 
         if (data.success) {
+            if (!isEditing) {
+                await queryClient.invalidateQueries({ queryKey: [`groupId-${values.groupId}`] });
+                await queryClient.invalidateQueries({ queryKey: ['events-all'] });
+            }
             router.replace({
                 pathname: isEditing ? `/event/${params.id}` : `/event/${data.response.id}`,
                 params: { groupId: String(values.groupId) }

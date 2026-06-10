@@ -42,7 +42,6 @@ const Main = () => {
         }
     });
 
-    // Build date → events lookup map
     const eventsByDate = events.reduce<Record<string, CalendarEvent[]>>((acc, event) => {
         const key = dayjs(event.date).format('YYYY-MM-DD');
         if (!acc[key]) acc[key] = [];
@@ -50,7 +49,6 @@ const Main = () => {
         return acc;
     }, {});
 
-    // Build marked dates for the calendar
     const markedDates = Object.keys(eventsByDate).reduce<Record<string, any>>((acc, key) => {
         acc[key] = {
             marked: true,
@@ -61,7 +59,6 @@ const Main = () => {
         return acc;
     }, {});
 
-    // Make sure selected date is always marked even if no events
     if (!markedDates[selectedDate]) {
         markedDates[selectedDate] = { selected: true, selectedColor: '#228be6' };
     } else {
