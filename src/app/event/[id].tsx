@@ -75,8 +75,11 @@ const EventDisplay = () => {
                 `${process.env.EXPO_PUBLIC_API_URL}/event/rsvp?id=${groupId}&eventId=${eventId}&rsvp=${rsvp}`,
                 { method: 'PUT', headers: authHeader }
             );
-            if (response.status === 204) await refetch();
-        }
+            if (!response.ok) {
+                throw new Error('Failed to update RSVP');
+            }
+        },
+        onSuccess: () => refetch()
     });
 
     useEffect(() => {
@@ -93,7 +96,7 @@ const EventDisplay = () => {
         return null;
     }
 
-    const myRsvp = event?.rsvps?.find(r => r.userId === user.id);
+    const myRsvp = event?.myRsvp;
     const isHost = event?.host?.userId === user.id;
     const isOwner = event.currentRole === Role.owner;
     const isAdmin = event.currentRole === Role.admin || isOwner;
@@ -181,11 +184,11 @@ const EventDisplay = () => {
             <View style={styles.rsvpRow}>
                 <Text style={styles.detailLabel}>My RSVP:</Text>
                 <TouchableOpacity
-                    style={[styles.rsvpButton, { backgroundColor: rsvpColor(myRsvp?.rsvp ?? Rsvp.pending) + '22' }]}
+                    style={[styles.rsvpButton, { backgroundColor: rsvpColor(myRsvp ?? Rsvp.pending) + '22' }]}
                     onPress={() => setShowRsvpPicker(true)}
                 >
-                    <Text style={[styles.rsvpButtonText, { color: rsvpColor(myRsvp?.rsvp ?? Rsvp.pending) }]}>
-                        {getRsvpLabelFor(myRsvp?.rsvp ?? Rsvp.pending)} ▾
+                    <Text style={[styles.rsvpButtonText, { color: rsvpColor(myRsvp ?? Rsvp.pending) }]}>
+                        {getRsvpLabelFor(myRsvp ?? Rsvp.pending)} ▾
                     </Text>
                 </TouchableOpacity>
             </View>
