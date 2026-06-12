@@ -12,6 +12,6 @@ export const styles = StyleSheet.create({
     emptyText: {textAlign: 'center', color: '#888', marginVertical: 8},
     errorText: {color: 'red', marginVertical: 8},
     joinedGroupsList: {
-        maxHeight: 400,
+        maxHeight: 250,
     },
 });

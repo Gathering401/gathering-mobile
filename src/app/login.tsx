@@ -55,7 +55,6 @@ const LogIn = () => {
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
             <Text style={styles.title}>Log In</Text>
-
             <Controller
                 control={control}
                 name="username"
@@ -72,7 +71,6 @@ const LogIn = () => {
                     </View>
                 )}
             />
-
             <Controller
                 control={control}
                 name="password"
@@ -89,7 +87,6 @@ const LogIn = () => {
                     </View>
                 )}
             />
-
             <TouchableOpacity
                 style={styles.button}
                 onPress={handleSubmit(onSubmit)}
@@ -97,11 +94,9 @@ const LogIn = () => {
             >
                 <Text style={styles.buttonText}>{loading ? 'Logging in...' : 'Submit'}</Text>
             </TouchableOpacity>
-
             <TouchableOpacity onPress={() => router.push('/signup')}>
                 <Text style={styles.link}>Don't have an account yet? Sign up here</Text>
             </TouchableOpacity>
-
             <Toast />
         </KeyboardAvoidingView>
     );

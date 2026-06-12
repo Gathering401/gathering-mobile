@@ -95,11 +95,14 @@ export const styles = StyleSheet.create({
         fontWeight: '500',
     },
     rejectionButton: {flexDirection: 'row', gap: 8},
-    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
-    modalContent: { backgroundColor: '#fff', borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 24 },
-    modalOption: { paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#eee' },
-    modalOptionText: { fontSize: 16 },
-    modalCancel: { textAlign: 'center', color: '#228be6', marginTop: 16, fontSize: 16 },
-    input: { borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 10, fontSize: 16 },
-    selectButton: { justifyContent: 'center' },
+    modalOverlay: {flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end'},
+    modalContent: {backgroundColor: '#fff', borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 24},
+    modalOption: {paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#eee'},
+    modalOptionText: {fontSize: 16},
+    modalCancel: {textAlign: 'center', color: '#228be6', marginTop: 16, fontSize: 16},
+    input: {borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 10, fontSize: 16},
+    selectButton: {justifyContent: 'center'},
+    eventsScrollView: {
+        width: '100%',
+    }
 });

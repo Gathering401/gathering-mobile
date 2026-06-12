@@ -209,7 +209,11 @@ const GroupDisplay = () => {
                     <View style={styles.roleRow}>
                         <TouchableOpacity
                             style={[styles.input, styles.selectButton]}
-                            onPress={() => { setRolePickerMember(m); setRolePickerVisible(true); }}
+                            onPress={() => {
+                                setRolePickerMember(m);
+                                setMembersPanelOpened(false);
+                                setTimeout(() => setRolePickerVisible(true), 300);
+                            }}
                         >
                             <Text style={{ color: '#333' }}>
                                 {getRoleOptions(currentRole!).find((o: { label: string; value: string }) => o.value === getRoleById(m.role))!.label}
@@ -315,12 +319,12 @@ const GroupDisplay = () => {
                 )}
             </View>
             {group?.events?.length > 0 ? (
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.eventsScrollView}>
                     {group.events.map((event) => (
                         <TouchableOpacity
                             key={event.id}
                             style={styles.eventCard}
-                            onPress={() => router.push(`/event/${event.id}`)}
+                            onPress={() => router.push(`/event/${event.id}?groupId=${group?.id}`)}
                         >
                             <Text style={styles.eventName}>{event.name}</Text>
                             {!!event.description && (
@@ -422,7 +426,15 @@ const GroupDisplay = () => {
                                     if (opt.value === 'owner') {
                                         confirmChangeOwner(rolePickerMember.id, rolePickerMember.username);
                                     } else {
-                                        updateMember({ userId: rolePickerMember.id, role: getRoleByValue(opt.value) });
+                                        updateMember(
+                                            { userId: rolePickerMember.id, role: getRoleByValue(opt.value) },
+                                            { onSuccess: () => {
+                                                    setRolePickerVisible(false);
+                                                    setRolePickerMember(null);
+                                                    setTimeout(() => setMembersPanelOpened(true), 300);
+                                                }
+                                            }
+                                        );
                                     }
                                     setRolePickerVisible(false);
                                     setRolePickerMember(null);

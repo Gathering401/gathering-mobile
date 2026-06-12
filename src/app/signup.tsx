@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import {useEffect, useState} from 'react';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useForm, Controller } from 'react-hook-form';
@@ -40,6 +40,10 @@ const SignUp = () => {
     const [loading, setLoading] = useState(false);
 
     const isEdit = params.isEdit === 'true';
+    const [token, setToken] = useState<string | null>(null);
+    useEffect(() => {
+        SecureStore.getItemAsync('token').then(setToken);
+    }, []);
 
     const { control, handleSubmit, getValues } = useForm<SignUpValues>({
         defaultValues: {
@@ -55,7 +59,6 @@ const SignUp = () => {
     });
 
     const onSubmit = async (values: SignUpValues) => {
-        // Client-side validation
         if (!emailRegex.test(values.email)) {
             return Toast.show({ type: 'error', text1: 'Email', text2: 'Invalid email address' });
         }
@@ -92,14 +95,23 @@ const SignUp = () => {
             const response = await fetch(url, {
                 body: JSON.stringify(body),
                 method,
-                headers: { 'Content-Type': 'application/json' }
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(isEdit && token ? { 'Authorization': `Bearer ${token}` } : {})
+                }
             });
 
             const data = await response.json();
 
             if (data.success) {
-                await SecureStore.setItemAsync('token', data.token);
-                await SecureStore.setItemAsync('user', JSON.stringify(data.response));
+                if (!isEdit) {
+                    await SecureStore.setItemAsync('token', data.token);
+                    await SecureStore.setItemAsync('user', JSON.stringify(data.response));
+                } else {
+                    const current = await SecureStore.getItemAsync('user');
+                    const currentUser = current ? JSON.parse(current) : {};
+                    await SecureStore.setItemAsync('user', JSON.stringify({ ...currentUser, ...body }));
+                }
                 router.replace(isEdit ? '/profile' : '/');
             } else {
                 Toast.show({ type: 'error', text1: 'Error', text2: 'Something went wrong. Please try again.' });
@@ -128,7 +140,7 @@ const SignUp = () => {
                             <View style={styles.fieldContainer}>
                                 <Text style={styles.label}>{_.startCase(field)}</Text>
                                 <TextInput
-                                    style={styles.input}
+                                    style={isEdit && ['username', 'email', 'birthdate'].includes(field) ? styles.inputDisabled : styles.input}
                                     placeholder={field === 'phone' ? '###-###-####' : _.startCase(field)}
                                     autoCapitalize="none"
                                     keyboardType={field === 'email' ? 'email-address' : field === 'phone' ? 'phone-pad' : 'default'}
