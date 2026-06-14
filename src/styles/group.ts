@@ -21,6 +21,7 @@ export const styles = StyleSheet.create({
         width: '100%',
         marginTop: 16
     },
+    eventsHeaderLeft: {flexDirection: 'row', alignItems: 'center', gap: 6},
     memberChip: {backgroundColor: '#f0f0f0', borderRadius: 8, padding: 10, marginRight: 8, minWidth: 120},
     memberChipName: {fontSize: 13, fontWeight: '500'},
     memberChipUsername: {fontSize: 11, color: '#666'},
@@ -76,24 +77,14 @@ export const styles = StyleSheet.create({
         minWidth: 200,
         maxWidth: 260,
         borderWidth: 1,
-        borderColor: '#e9ecef',
+        borderColor: '#e9ecef'
     },
-    eventName: {
-        fontSize: 15,
-        fontWeight: '600',
-        color: '#212529',
-        marginBottom: 4,
-    },
-    eventDescription: {
-        fontSize: 13,
-        color: '#868e96',
-        marginBottom: 6,
-    },
-    eventDate: {
-        fontSize: 12,
-        color: '#495057',
-        fontWeight: '500',
-    },
+    eventName: {fontSize: 15, fontWeight: '600', color: '#212529', marginBottom: 4},
+    eventDescription: {fontSize: 13, color: '#868e96', marginBottom: 6},
+    eventDate: {fontSize: 12, color: '#495057', fontWeight: '500'},
+    eventCardFooter: {flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 6},
+    rsvpPill: {borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4},
+    rsvpPillText: {fontSize: 12, fontWeight: '600'},
     rejectionButton: {flexDirection: 'row', gap: 8},
     modalOverlay: {flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end'},
     modalContent: {backgroundColor: '#fff', borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 24},
@@ -102,7 +93,17 @@ export const styles = StyleSheet.create({
     modalCancel: {textAlign: 'center', color: '#228be6', marginTop: 16, fontSize: 16},
     input: {borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 10, fontSize: 16},
     selectButton: {justifyContent: 'center'},
-    eventsScrollView: {
-        width: '100%',
-    }
+    eventsScrollView: {width: '100%'},
+    bubble: {
+        borderRadius: 10,
+        minWidth: 20,
+        height: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 5
+    },
+    bubbleBlue: {backgroundColor: '#228be6'},
+    bubbleRed: {backgroundColor: '#ef4444'},
+    bubbleText: {color: '#fff', fontSize: 11, fontWeight: '700'},
+    outlineButtonRow: {flexDirection: 'row', alignItems: 'center', gap: 6},
 });

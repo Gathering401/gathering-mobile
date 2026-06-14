@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
-import { useForm, Controller } from 'react-hook-form';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import {useForm, Controller, DefaultValues} from 'react-hook-form';
+import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import Toast from 'react-native-toast-message';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import dayjs from 'dayjs';
 import _ from 'lodash';
 import {
     View, Text, TextInput, TouchableOpacity, ScrollView,
-    KeyboardAvoidingView, Platform, Modal
+    KeyboardAvoidingView, Platform, Modal, ActivityIndicator
 } from 'react-native';
 import { GatheringGroup } from '../constants/GatheringGroup';
 import { Repetition, getRepetitionOptions, getRepetitionByValue } from '../constants/enums/Repetition';
@@ -43,7 +43,7 @@ const EventForm = () => {
         SecureStore.getItemAsync('user').then(u => u && setUser(JSON.parse(u)));
     }, []);
 
-    const { control, handleSubmit, watch, setValue } = useForm<EventValues>({
+    const { control, handleSubmit, watch, setValue } = useForm({
         defaultValues: {
             name: (params.name as string) ?? '',
             description: (params.description as string) ?? '',
@@ -104,7 +104,69 @@ const EventForm = () => {
         };
     };
 
-    const onSubmit = async (values: EventValues) => {
+    const { mutate: submitEvent, isPending } = useMutation({
+        mutationFn: async (values: EventValues) => {
+            let url: string;
+            let method: string;
+            let body: object;
+
+            if (isEditing) {
+                const queryParams = new URLSearchParams({
+                    id: String(values.groupId),
+                    eventId: String(params.id),
+                });
+                if (params.seriesId) queryParams.set('seriesId', String(params.seriesId));
+                url = `${process.env.EXPO_PUBLIC_API_URL}/event?${queryParams.toString()}`;
+                method = 'PUT';
+                body = {
+                    id: Number(params.id),
+                    name: values.name,
+                    description: values.description,
+                    location: values.location,
+                    cost: Number(values.cost),
+                    date: editDateEnabled ? dayjs(values.date).toISOString() : undefined,
+                    repetition: values.repetition,
+                    group_id: values.groupId,
+                };
+            } else {
+                url = `${process.env.EXPO_PUBLIC_API_URL}/event?id=${values.groupId}`;
+                method = 'POST';
+                body = mapValuesToEventPost(values);
+            }
+
+            const response = await fetch(url, {
+                body: JSON.stringify(body),
+                method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const data = await response.json();
+            if (!data.success) throw new Error(data.error);
+            return { data, groupId: values.groupId };
+        },
+        onSuccess: async ({ data, groupId }) => {
+            if (isEditing) {
+                await queryClient.invalidateQueries({ queryKey: [`eventId-${params.id}`] });
+                await queryClient.invalidateQueries({ queryKey: [`groupId-${groupId}`] });
+                await queryClient.invalidateQueries({ queryKey: ['events'] });
+            } else {
+                await queryClient.invalidateQueries({ queryKey: [`groupId-${groupId}`] });
+                await queryClient.invalidateQueries({ queryKey: ['events'] });
+            }
+            router.replace({
+                pathname: isEditing ? `/event/${params.id}` : `/event/${data.response.id}`,
+                params: { groupId: String(groupId) }
+            });
+        },
+        onError: () => {
+            Toast.show({ type: 'error', text1: 'Error', text2: 'Something went wrong. Please try again.' });
+        }
+    });
+
+    const onSubmit = (values: EventValues) => {
         if (!(/[A-Z0-9]{1,50}/i).test(values.name)) {
             return Toast.show({ type: 'error', text1: 'Name', text2: 'Event name cannot exceed 50 characters' });
         }
@@ -117,58 +179,7 @@ const EventForm = () => {
         if (dayjs(values.date).isBefore(dayjs().add(1, 'day'))) {
             return Toast.show({ type: 'error', text1: 'Date', text2: 'Event date must be in the future' });
         }
-
-        let url: string;
-        let method: string;
-        let body: object;
-
-        if (isEditing) {
-            const queryParams = new URLSearchParams({
-                id: String(values.groupId),
-                eventId: String(params.id),
-            });
-            if (params.seriesId) queryParams.set('seriesId', String(params.seriesId));
-            url = `${process.env.EXPO_PUBLIC_API_URL}/event?${queryParams.toString()}`;
-            method = 'PUT';
-            body = {
-                id: Number(params.id),
-                name: values.name,
-                description: values.description,
-                location: values.location,
-                cost: Number(values.cost),
-                date: editDateEnabled ? dayjs(values.date).toISOString() : undefined,
-                repetition: values.repetition,
-                group_id: values.groupId,
-            };
-        } else {
-            url = `${process.env.EXPO_PUBLIC_API_URL}/event?id=${values.groupId}`;
-            method = 'POST';
-            body = mapValuesToEventPost(values);
-        }
-
-        const response = await fetch(url, {
-            body: JSON.stringify(body),
-            method,
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            }
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            if (!isEditing) {
-                await queryClient.invalidateQueries({ queryKey: [`groupId-${values.groupId}`] });
-                await queryClient.invalidateQueries({ queryKey: ['events-all'] });
-            }
-            router.replace({
-                pathname: isEditing ? `/event/${params.id}` : `/event/${data.response.id}`,
-                params: { groupId: String(values.groupId) }
-            });
-        } else {
-            Toast.show({ type: 'error', text1: 'Error', text2: 'Something went wrong. Please try again.' });
-        }
+        submitEvent(values);
     };
 
     const repetitionOptions = getRepetitionOptions();
@@ -314,8 +325,11 @@ const EventForm = () => {
                     <TouchableOpacity style={styles.cancelButton} onPress={() => router.back()}>
                         <Text style={styles.cancelText}>Cancel</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.submitButton} onPress={handleSubmit(onSubmit)}>
-                        <Text style={styles.submitText}>{isEditing ? 'Save' : 'Submit'}</Text>
+                    <TouchableOpacity style={styles.submitButton} onPress={handleSubmit(onSubmit)} disabled={isPending}>
+                        {isPending
+                            ? <ActivityIndicator color="#fff" />
+                            : <Text style={styles.submitText}>{isEditing ? 'Save' : 'Submit'}</Text>
+                        }
                     </TouchableOpacity>
                 </View>
                 <Toast />

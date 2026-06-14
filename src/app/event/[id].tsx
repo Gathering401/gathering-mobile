@@ -42,6 +42,7 @@ const EventDisplay = () => {
     const [editModalOpened, setEditModalOpened] = useState(false);
     const [locationCopied, setLocationCopied] = useState(false);
     const [showRsvpPicker, setShowRsvpPicker] = useState(false);
+    const [showSeriesModal, setShowSeriesModal] = useState(false);
 
     useEffect(() => {
         SecureStore.getItemAsync('token').then(setToken);
@@ -156,6 +157,11 @@ const EventDisplay = () => {
             <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>When?</Text>
                 <Text style={styles.detailValue}>{dayjs(event.date).format('dddd MMM DD, YYYY [at] h:mm A')}</Text>
+                {event.seriesDates.length > 0 && (
+                    <TouchableOpacity onPress={() => setShowSeriesModal(true)}>
+                        <Text style={styles.seriesLink}>View all dates</Text>
+                    </TouchableOpacity>
+                )}
             </View>
             <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Where?</Text>
@@ -168,10 +174,12 @@ const EventDisplay = () => {
                 <Text style={styles.detailLabel}>Price:</Text>
                 <Text style={styles.detailValue}>{Number(event.cost) > 0 ? `$${Number(event.cost).toFixed(2)}` : 'FREE'}</Text>
             </View>
-            <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>How often?</Text>
-                <Text style={styles.detailValue}>{getRepetitionLabel(event.repetition)}</Text>
-            </View>
+            {(myRsvp === Rsvp.pending || myRsvp === Rsvp.rejected) && (
+                <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>How often?</Text>
+                    <Text style={styles.detailValue}>{getRepetitionLabel(event.repetition)}</Text>
+                </View>
+            )}
             <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Hosted by:</Text>
                 <Text style={styles.detailValue}>{event.host.fullName}</Text>
@@ -259,6 +267,26 @@ const EventDisplay = () => {
                     </View>
                 </Modal>
             )}
+            <Modal visible={showSeriesModal} transparent animationType="fade">
+                <View style={styles.seriesModalOverlay}>
+                    <View style={styles.seriesModalContent}>
+                        <Text style={styles.modalTitle}>Upcoming Dates</Text>
+                        <ScrollView>
+                            {event.seriesDates.map((date, index) => (
+                                <Text
+                                    key={date}
+                                    style={[styles.seriesDate, index === 0 && styles.seriesDateUpcoming]}
+                                >
+                                    {dayjs(date).format(event.repetition === Repetition.weekly ? 'MMM DD, YYYY [at] h:mm A' : 'dddd MMM DD, YYYY [at] h:mm A')}
+                                </Text>
+                            ))}
+                        </ScrollView>
+                        <TouchableOpacity onPress={() => setShowSeriesModal(false)}>
+                            <Text style={styles.modalClose}>Close</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
         </ScrollView>
     );
 };

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
-import {useMutation, useQuery, UseQueryResult} from '@tanstack/react-query';
+import {useMutation, useQuery, useQueryClient, UseQueryResult} from '@tanstack/react-query';
 import {
     View, Text, TouchableOpacity, ScrollView,
     ActivityIndicator, TextInput, Modal, Alert
@@ -10,12 +10,23 @@ import { Ionicons } from '@expo/vector-icons';
 import { GatheringGroup } from '../../constants/GatheringGroup';
 import { getRoleById, getRoleByValue, getRoleOptions, Role } from '../../constants/enums/Role';
 import { InviteStatus } from '../../constants/enums/InviteStatus';
+import { getRsvpLabelFor, getRsvpsForDropdown, Rsvp } from '../../constants/enums/Rsvp';
 import {styles} from "../../styles/group";
 import dayjs from "dayjs";
+
+const rsvpColor = (rsvp: Rsvp): string => {
+    switch (rsvp) {
+        case Rsvp.attending: return '#40c057';
+        case Rsvp.maybe: return '#fab005';
+        case Rsvp.rejected: return '#fa5252';
+        default: return '#868e96';
+    }
+};
 
 const GroupDisplay = () => {
     const router = useRouter();
     const { id: groupId } = useLocalSearchParams();
+    const queryClient = useQueryClient();
     const [token, setToken] = useState<string | null>(null);
     const [user, setUser] = useState<any>(null);
     const [membersPanelOpened, setMembersPanelOpened] = useState(false);
@@ -26,6 +37,7 @@ const GroupDisplay = () => {
     const [invitedUsers, setInvitedUsers] = useState<number[]>([]);
     const [rolePickerVisible, setRolePickerVisible] = useState(false);
     const [rolePickerMember, setRolePickerMember] = useState<any>(null);
+    const [rsvpPickerEvent, setRsvpPickerEvent] = useState<any>(null);
 
     useEffect(() => {
         SecureStore.getItemAsync('token').then(setToken);
@@ -117,9 +129,22 @@ const GroupDisplay = () => {
                 `${process.env.EXPO_PUBLIC_API_URL}/group/request-response?id=${groupId}&userId=${userId}&accepted=${accepted}`,
                 { method: 'PUT', headers: authHeader }
             );
-            if (response.ok) {
-                await refetch();
-            }
+            if (response.ok) await refetch();
+        }
+    });
+
+    const { mutate: updateRsvp } = useMutation({
+        mutationFn: async ({ eventId, rsvp }: { eventId: number, rsvp: Rsvp }) => {
+            const response = await fetch(
+                `${process.env.EXPO_PUBLIC_API_URL}/event/rsvp?id=${groupId}&eventId=${eventId}&rsvp=${rsvp}`,
+                { method: 'PUT', headers: authHeader }
+            );
+            if (!response.ok) throw new Error('Failed to update RSVP');
+        },
+        onSuccess: async (_, { eventId }) => {
+            await queryClient.invalidateQueries({ queryKey: [`eventId-${eventId}`] });
+            await refetch();
+            setRsvpPickerEvent(null);
         }
     });
 
@@ -137,16 +162,15 @@ const GroupDisplay = () => {
         ) ?? [];
     }, [group, searchMembers]);
 
+    const pendingRsvpCount = useMemo(() =>
+        group?.events?.filter(e => e.myRsvp === Rsvp.pending).length ?? 0, [group]);
+
     useEffect(() => {
-        if (error) {
-            router.replace('/');
-        }
+        if (error) router.replace('/');
     }, [error]);
 
     useEffect(() => {
-        if (!isLoading && !error && group && currentRole === undefined) {
-            router.replace('/');
-        }
+        if (!isLoading && !error && group && currentRole === undefined) router.replace('/');
     }, [isLoading, group, currentRole]);
 
     if (isLoading || !user) {
@@ -188,6 +212,8 @@ const GroupDisplay = () => {
             ]
         );
     };
+
+    const rsvpOptions = getRsvpsForDropdown();
 
     const renderMemberCard = (m: any) => {
         const isPending = m.inviteStatus === InviteStatus.pending;
@@ -287,9 +313,14 @@ const GroupDisplay = () => {
                             style={styles.outlineButton}
                             onPress={() => setMembersPanelOpened(true)}
                         >
-                            <Text style={styles.outlineButtonText}>
-                                View All {pendingMembers.length > 0 && `(${pendingMembers.length} pending)`}
-                            </Text>
+                            <View style={styles.outlineButtonRow}>
+                                <Text style={styles.outlineButtonText}>View All</Text>
+                                {pendingMembers.length > 0 && (
+                                    <View style={[styles.bubble, styles.bubbleRed]}>
+                                        <Text style={styles.bubbleText}>{pendingMembers.length}</Text>
+                                    </View>
+                                )}
+                            </View>
                         </TouchableOpacity>
                     )}
                 </View>
@@ -308,7 +339,14 @@ const GroupDisplay = () => {
                 </>
             )}
             <View style={styles.eventsRow}>
-                <Text style={styles.sectionTitle}>Upcoming Events</Text>
+                <View style={styles.eventsHeaderLeft}>
+                    <Text style={styles.sectionTitle}>Upcoming Events</Text>
+                    {pendingRsvpCount > 0 && (
+                        <View style={[styles.bubble, styles.bubbleBlue]}>
+                            <Text style={styles.bubbleText}>{pendingRsvpCount}</Text>
+                        </View>
+                    )}
+                </View>
                 {isCreator && (
                     <TouchableOpacity
                         style={styles.button}
@@ -330,13 +368,45 @@ const GroupDisplay = () => {
                             {!!event.description && (
                                 <Text style={styles.eventDescription}>{event.description}</Text>
                             )}
-                            <Text style={styles.eventDate}>{formatEventDate(event.date)}</Text>
+                            <View style={styles.eventCardFooter}>
+                                <Text style={styles.eventDate}>{formatEventDate(event.date)}</Text>
+                                <TouchableOpacity
+                                    style={[styles.rsvpPill, { backgroundColor: rsvpColor(event.myRsvp) + '22' }]}
+                                    onPress={(e) => {
+                                        e.stopPropagation();
+                                        setRsvpPickerEvent(event);
+                                    }}
+                                >
+                                    <Text style={[styles.rsvpPillText, { color: rsvpColor(event.myRsvp) }]}>
+                                        {getRsvpLabelFor(event.myRsvp)} ▾
+                                    </Text>
+                                </TouchableOpacity>
+                            </View>
                         </TouchableOpacity>
                     ))}
                 </ScrollView>
             ) : (
                 <Text style={styles.emptyText}>No upcoming events right now, get one planned!</Text>
             )}
+            <Modal visible={!!rsvpPickerEvent} transparent animationType="slide">
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Update RSVP</Text>
+                        {rsvpOptions.map((opt: { label: string; value: string }) => (
+                            <TouchableOpacity
+                                key={opt.value}
+                                style={styles.modalOption}
+                                onPress={() => updateRsvp({ eventId: rsvpPickerEvent.id, rsvp: Number(opt.value) as Rsvp })}
+                            >
+                                <Text style={styles.modalOptionText}>{opt.label}</Text>
+                            </TouchableOpacity>
+                        ))}
+                        <TouchableOpacity onPress={() => setRsvpPickerEvent(null)}>
+                            <Text style={styles.modalCancel}>Cancel</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
             <Modal visible={membersPanelOpened} transparent animationType="slide" onRequestClose={() => setMembersPanelOpened(false)}>
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>

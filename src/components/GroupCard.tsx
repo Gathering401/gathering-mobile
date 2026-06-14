@@ -1,6 +1,7 @@
 import {GatheringGroup} from "../constants/GatheringGroup";
 import {useState} from "react";
 import {InviteStatus} from "../constants/enums/InviteStatus";
+import {Role} from "../constants/enums/Role";
 import {Text, TouchableOpacity, View} from "react-native";
 import {styles} from "../styles/groupCard";
 
@@ -11,16 +12,14 @@ interface GroupCardProps {
     onJoin?: () => Promise<void>;
 }
 
-const GroupCard = ({ group, onPress, onInviteResponse, onJoin }: GroupCardProps) => {
+const GroupCard = ({group, onPress, onInviteResponse, onJoin}: GroupCardProps) => {
     const [responding, setResponding] = useState(false);
 
     const isPendingInvite = group.inviteStatus === InviteStatus.pending && group.invitedByGroup;
     const isPendingRequest = group.inviteStatus === InviteStatus.pending && !group.invitedByGroup;
 
     const handleResponse = async (accepted: boolean) => {
-        if (!onInviteResponse) {
-            return;
-        }
+        if (!onInviteResponse) return;
         setResponding(true);
         try {
             await onInviteResponse(accepted);
@@ -30,9 +29,7 @@ const GroupCard = ({ group, onPress, onInviteResponse, onJoin }: GroupCardProps)
     };
 
     const handleJoin = async () => {
-        if (!onJoin) {
-            return;
-        }
+        if (!onJoin) return;
         setResponding(true);
         try {
             await onJoin();
@@ -40,6 +37,23 @@ const GroupCard = ({ group, onPress, onInviteResponse, onJoin }: GroupCardProps)
             setResponding(false);
         }
     };
+
+    const isAdmin = group.role === Role.admin || group.role === Role.owner;
+
+    const Bubbles = () => (
+        <View style={styles.bubbleRow}>
+            {group.pendingRsvpCount > 0 && (
+                <View style={[styles.bubble, styles.bubbleBlue]}>
+                    <Text style={styles.bubbleText}>{group.pendingRsvpCount}</Text>
+                </View>
+            )}
+            {isAdmin && group.pendingJoinRequestCount > 0 && (
+                <View style={[styles.bubble, styles.bubbleRed]}>
+                    <Text style={styles.bubbleText}>{group.pendingJoinRequestCount}</Text>
+                </View>
+            )}
+        </View>
+    );
 
     if (onJoin) {
         const isRejected = ([InviteStatus.rejected_by_group, InviteStatus.rejected_by_user] as InviteStatus[]).includes(group.inviteStatus);
@@ -73,6 +87,7 @@ const GroupCard = ({ group, onPress, onInviteResponse, onJoin }: GroupCardProps)
             </View>
         );
     }
+
     if (isPendingInvite) {
         return (
             <View style={styles.card}>
@@ -101,6 +116,7 @@ const GroupCard = ({ group, onPress, onInviteResponse, onJoin }: GroupCardProps)
             </View>
         );
     }
+
     if (isPendingRequest) {
         return (
             <View style={[styles.card, styles.cardMuted]}>
@@ -116,6 +132,7 @@ const GroupCard = ({ group, onPress, onInviteResponse, onJoin }: GroupCardProps)
             </View>
         );
     }
+
     return (
         <TouchableOpacity style={styles.card} onPress={onPress}>
             <View style={styles.cardRow}>
@@ -123,11 +140,14 @@ const GroupCard = ({ group, onPress, onInviteResponse, onJoin }: GroupCardProps)
                     <Text style={styles.cardTitle}>{group.name}</Text>
                     <Text style={styles.cardDescription}>{group.description}</Text>
                 </View>
-                {Boolean(group.public) && (
-                    <View style={styles.badge}>
-                        <Text style={styles.badgeText}>Public</Text>
-                    </View>
-                )}
+                <View style={styles.bubbleRow}>
+                    <Bubbles/>
+                    {Boolean(group.public) && (
+                        <View style={styles.badge}>
+                            <Text style={styles.badgeText}>Public</Text>
+                        </View>
+                    )}
+                </View>
             </View>
         </TouchableOpacity>
     );

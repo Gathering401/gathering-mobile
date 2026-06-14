@@ -30,10 +30,19 @@ export const styles = StyleSheet.create({
         borderWidth: 1,
         borderRadius: 6,
         paddingHorizontal: 10,
-        paddingVertical: 4,
+        paddingVertical: 4
     },
-    rejectedBadgeText: {
-        color: '#fa5252',
-        fontSize: 13,
+    rejectedBadgeText: {color: '#fa5252', fontSize: 13},
+    bubbleRow: {flexDirection: 'row', alignItems: 'center', gap: 6, marginLeft: 8},
+    bubble: {
+        borderRadius: 10,
+        minWidth: 20,
+        height: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 5
     },
+    bubbleBlue: {backgroundColor: '#228be6'},
+    bubbleRed: {backgroundColor: '#ef4444'},
+    bubbleText: {color: '#fff', fontSize: 11, fontWeight: '700'},
 });

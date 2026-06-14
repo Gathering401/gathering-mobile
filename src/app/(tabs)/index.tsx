@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
-import { useRouter } from 'expo-router';
+import {useState, useEffect} from 'react';
+import {useRouter} from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
-import { useQuery } from '@tanstack/react-query';
-import { Calendar } from 'react-native-calendars';
-import { Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
+import {Calendar} from 'react-native-calendars';
+import {Text, TouchableOpacity, ScrollView, ActivityIndicator, View, Modal} from 'react-native';
 import dayjs from 'dayjs';
 import {styles} from "../../styles";
+import {Rsvp, getRsvpLabelFor, getRsvpsForDropdown} from "../../constants/enums/Rsvp";
 
 interface CalendarEvent {
     id: number;
@@ -14,27 +15,41 @@ interface CalendarEvent {
     date: string;
     groupId: number;
     groupName: string;
+    myRsvp: Rsvp;
 }
+
+const rsvpColor = (rsvp: Rsvp): string => {
+    switch (rsvp) {
+        case Rsvp.attending: return '#40c057';
+        case Rsvp.maybe: return '#fab005';
+        case Rsvp.rejected: return '#fa5252';
+        default: return '#868e96';
+    }
+};
 
 const Main = () => {
     const router = useRouter();
+    const queryClient = useQueryClient();
     const [token, setToken] = useState<string | null>(null);
     const [selectedDate, setSelectedDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
+    const [rsvpPickerEvent, setRsvpPickerEvent] = useState<CalendarEvent | null>(null);
 
     useEffect(() => {
         SecureStore.getItemAsync('token').then(setToken);
     }, []);
 
-    const { isLoading, data: events = [] } = useQuery<CalendarEvent[]>({
-        queryKey: ['events-all'],
+    const authHeader = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+    };
+
+    const {isLoading, data: events = [], refetch} = useQuery<CalendarEvent[]>({
+        queryKey: ['events'],
         enabled: !!token,
         queryFn: async () => {
             const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/event/all`, {
                 method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
+                headers: authHeader
             });
             const data = await response.json();
             if (data.success) return data.response;
@@ -42,25 +57,49 @@ const Main = () => {
         }
     });
 
+    const {mutate: updateRsvp} = useMutation({
+        mutationFn: async ({eventId, groupId, rsvp}: {eventId: number, groupId: number, rsvp: Rsvp}) => {
+            const response = await fetch(
+                `${process.env.EXPO_PUBLIC_API_URL}/event/rsvp?id=${groupId}&eventId=${eventId}&rsvp=${rsvp}`,
+                {method: 'PUT', headers: authHeader}
+            );
+            if (!response.ok) throw new Error('Failed to update RSVP');
+        },
+        onSuccess: async (_, {eventId}) => {
+            await queryClient.invalidateQueries({queryKey: [`eventId-${eventId}`]});
+            await refetch();
+            setRsvpPickerEvent(null);
+        }
+    });
+
     const eventsByDate = events.reduce<Record<string, CalendarEvent[]>>((acc, event) => {
         const key = dayjs(event.date).format('YYYY-MM-DD');
-        if (!acc[key]) acc[key] = [];
+        if (!acc[key]) {
+            acc[key] = [];
+        }
         acc[key].push(event);
         return acc;
     }, {});
 
     const markedDates = Object.keys(eventsByDate).reduce<Record<string, any>>((acc, key) => {
-        acc[key] = {
-            marked: true,
-            dotColor: '#228be6',
-            selected: key === selectedDate,
-            selectedColor: '#228be6',
-        };
+        const dayEvents = eventsByDate[key];
+        const hasPending = dayEvents.some(e => e.myRsvp === Rsvp.pending);
+        const hasResponded = dayEvents.some(e => e.myRsvp !== Rsvp.pending);
+
+        const dots = [];
+        if (hasPending) {
+            dots.push({key: 'pending', color: '#ef4444'});
+        }
+        if (hasResponded) {
+            dots.push({key: 'responded', color: '#228be6'});
+        }
+
+        acc[key] = {dots, selected: key === selectedDate, selectedColor: '#228be6'};
         return acc;
     }, {});
 
     if (!markedDates[selectedDate]) {
-        markedDates[selectedDate] = { selected: true, selectedColor: '#228be6' };
+        markedDates[selectedDate] = {selected: true, selectedColor: '#228be6', dots: []};
     } else {
         markedDates[selectedDate].selected = true;
         markedDates[selectedDate].selectedColor = '#228be6';
@@ -71,17 +110,19 @@ const Main = () => {
         .sort((a, b) => dayjs(a.date).diff(dayjs(b.date)));
 
     const formattedSelected = dayjs(selectedDate).format('MMMM D, YYYY');
+    const rsvpOptions = getRsvpsForDropdown();
 
     return (
         <ScrollView contentContainerStyle={styles.container}>
             {isLoading ? (
-                <ActivityIndicator size="large" style={{ marginTop: 40 }} />
+                <ActivityIndicator size="large" style={{marginTop: 40}}/>
             ) : (
                 <>
                     <Calendar
                         current={selectedDate}
                         onDayPress={(day) => setSelectedDate(day.dateString)}
                         markedDates={markedDates}
+                        markingType="multi-dot"
                         theme={{
                             todayTextColor: '#228be6',
                             selectedDayBackgroundColor: '#228be6',
@@ -89,9 +130,7 @@ const Main = () => {
                             arrowColor: '#228be6',
                         }}
                     />
-
                     <Text style={styles.dateTitle}>{formattedSelected}</Text>
-
                     {selectedEvents.length === 0 ? (
                         <Text style={styles.emptyText}>No events on {formattedSelected}</Text>
                     ) : (
@@ -101,15 +140,51 @@ const Main = () => {
                                 style={styles.card}
                                 onPress={() => router.push({
                                     pathname: `/event/${event.id}`,
-                                    params: { groupId: String(event.groupId) }
+                                    params: {groupId: String(event.groupId)}
                                 })}
                             >
                                 <Text style={styles.cardTitle}>{event.name}</Text>
                                 <Text style={styles.cardGroup}>{event.groupName}</Text>
-                                <Text style={styles.cardTime}>{dayjs(event.date).format('h:mm A')}</Text>
+                                <View style={styles.cardFooter}>
+                                    <Text style={styles.cardTime}>{dayjs(event.date).format('h:mm A')}</Text>
+                                    <TouchableOpacity
+                                        style={[styles.rsvpPill, {backgroundColor: rsvpColor(event.myRsvp) + '22'}]}
+                                        onPress={(e) => {
+                                            e.stopPropagation();
+                                            setRsvpPickerEvent(event);
+                                        }}
+                                    >
+                                        <Text style={[styles.rsvpPillText, {color: rsvpColor(event.myRsvp)}]}>
+                                            {getRsvpLabelFor(event.myRsvp)} ▾
+                                        </Text>
+                                    </TouchableOpacity>
+                                </View>
                             </TouchableOpacity>
                         ))
                     )}
+                    <Modal visible={!!rsvpPickerEvent} transparent animationType="slide">
+                        <View style={styles.modalOverlay}>
+                            <View style={styles.modalContent}>
+                                <Text style={styles.modalTitle}>Update RSVP</Text>
+                                {rsvpOptions.map((opt: {label: string; value: string}) => (
+                                    <TouchableOpacity
+                                        key={opt.value}
+                                        style={styles.modalOption}
+                                        onPress={() => updateRsvp({
+                                            eventId: rsvpPickerEvent!.id,
+                                            groupId: rsvpPickerEvent!.groupId,
+                                            rsvp: Number(opt.value) as Rsvp
+                                        })}
+                                    >
+                                        <Text style={styles.modalOptionText}>{opt.label}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                                <TouchableOpacity onPress={() => setRsvpPickerEvent(null)}>
+                                    <Text style={styles.modalCancel}>Cancel</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </Modal>
                 </>
             )}
         </ScrollView>

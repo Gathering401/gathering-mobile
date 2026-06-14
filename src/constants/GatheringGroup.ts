@@ -1,6 +1,7 @@
 import {GroupUser} from "./GroupUser";
 import {Event} from "./Event";
 import {InviteStatus} from "./enums/InviteStatus";
+import {Role} from "./enums/Role";
 
 export interface GatheringGroup {
     id?: number;
@@ -11,4 +12,7 @@ export interface GatheringGroup {
     events: Event[];
     inviteStatus: InviteStatus;
     invitedByGroup?: boolean;
+    pendingRsvpCount: number;
+    pendingJoinRequestCount: number;
+    role: Role;
 }
