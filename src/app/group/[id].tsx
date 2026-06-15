@@ -1,33 +1,38 @@
-import { useState, useEffect, useMemo } from 'react';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import {useState, useEffect, useMemo} from 'react';
+import {useRouter, useLocalSearchParams} from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import {useMutation, useQuery, useQueryClient, UseQueryResult} from '@tanstack/react-query';
 import {
     View, Text, TouchableOpacity, ScrollView,
     ActivityIndicator, TextInput, Modal, Alert
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { GatheringGroup } from '../../constants/GatheringGroup';
-import { getRoleById, getRoleByValue, getRoleOptions, Role } from '../../constants/enums/Role';
-import { InviteStatus } from '../../constants/enums/InviteStatus';
-import { getRsvpLabelFor, getRsvpsForDropdown, Rsvp } from '../../constants/enums/Rsvp';
+import {Ionicons} from '@expo/vector-icons';
+import {GatheringGroup} from '../../constants/GatheringGroup';
+import {getRoleById, getRoleByValue, getRoleOptions, Role} from '../../constants/enums/Role';
+import {InviteStatus} from '../../constants/enums/InviteStatus';
+import {getRsvpLabelFor, getRsvpsForDropdown, Rsvp} from '../../constants/enums/Rsvp';
 import {styles} from "../../styles/group";
 import dayjs from "dayjs";
+import {useAuthHeader} from '../../hooks/useAuthHeader';
+import {useRsvpUpdate} from '../../hooks/useRsvpUpdate';
 
 const rsvpColor = (rsvp: Rsvp): string => {
     switch (rsvp) {
-        case Rsvp.attending: return '#40c057';
-        case Rsvp.maybe: return '#fab005';
-        case Rsvp.rejected: return '#fa5252';
-        default: return '#868e96';
+        case Rsvp.attending:
+            return '#40c057';
+        case Rsvp.maybe:
+            return '#fab005';
+        case Rsvp.rejected:
+            return '#fa5252';
+        default:
+            return '#868e96';
     }
 };
 
 const GroupDisplay = () => {
     const router = useRouter();
-    const { id: groupId } = useLocalSearchParams();
+    const {id: groupId} = useLocalSearchParams();
     const queryClient = useQueryClient();
-    const [token, setToken] = useState<string | null>(null);
     const [user, setUser] = useState<any>(null);
     const [membersPanelOpened, setMembersPanelOpened] = useState(false);
     const [invitePanelOpened, setInvitePanelOpened] = useState(false);
@@ -39,8 +44,9 @@ const GroupDisplay = () => {
     const [rolePickerMember, setRolePickerMember] = useState<any>(null);
     const [rsvpPickerEvent, setRsvpPickerEvent] = useState<any>(null);
 
+    const authHeader = useAuthHeader();
+
     useEffect(() => {
-        SecureStore.getItemAsync('token').then(setToken);
         SecureStore.getItemAsync('user').then(u => u && setUser(JSON.parse(u)));
     }, []);
 
@@ -49,14 +55,9 @@ const GroupDisplay = () => {
         return () => clearTimeout(timer);
     }, [searchInvite]);
 
-    const authHeader = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-    };
-
-    const { isLoading, data, error, refetch }: UseQueryResult = useQuery<{ group: GatheringGroup, currentRole: Role }>({
+    const {isLoading, data, error, refetch}: UseQueryResult = useQuery<{ group: GatheringGroup, currentRole: Role }>({
         queryKey: [`groupId-${groupId}`],
-        enabled: !!token,
+        enabled: !!authHeader.Authorization,
         queryFn: async () => {
             const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/group?id=${groupId}`, {
                 method: 'GET',
@@ -64,7 +65,7 @@ const GroupDisplay = () => {
             });
             const data = await response.json();
             if (data.success) {
-                return { group: data.response, currentRole: data.currentRole };
+                return {group: data.response, currentRole: data.currentRole};
             }
             throw new Error(data.error);
         }
@@ -72,7 +73,7 @@ const GroupDisplay = () => {
     const group = data?.group;
     const currentRole = data?.currentRole;
 
-    const { mutate: removeMember } = useMutation({
+    const {mutate: removeMember} = useMutation({
         mutationFn: async (userId: number) => {
             const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/group/remove-member?id=${groupId}&userId=${userId}`, {
                 method: 'DELETE',
@@ -82,8 +83,8 @@ const GroupDisplay = () => {
         }
     });
 
-    const { mutate: updateMember } = useMutation({
-        mutationFn: async ({ userId, role }: { userId: number, role: Role }) => {
+    const {mutate: updateMember} = useMutation({
+        mutationFn: async ({userId, role}: { userId: number, role: Role }) => {
             const query = role === Role.owner
                 ? `change-owner?id=${groupId}&userId=${userId}`
                 : `change-role?id=${groupId}&userId=${userId}&role=${role}`;
@@ -95,9 +96,9 @@ const GroupDisplay = () => {
         }
     });
 
-    const { data: searchResults, isLoading: loadingSearch }: UseQueryResult = useQuery({
+    const {data: searchResults, isLoading: loadingSearch}: UseQueryResult = useQuery({
         queryKey: [`search-users-${groupId}-${debouncedInviteSearch}`],
-        enabled: !!debouncedInviteSearch && !!token,
+        enabled: !!debouncedInviteSearch && !!authHeader.Authorization,
         queryFn: async () => {
             const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/group/search-users?id=${groupId}&username=${debouncedInviteSearch}`, {
                 method: 'GET',
@@ -109,7 +110,7 @@ const GroupDisplay = () => {
         }
     });
 
-    const { mutate: inviteUser } = useMutation({
+    const {mutate: inviteUser} = useMutation({
         mutationFn: async (userId: number) => {
             const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/group/invite-user?id=${groupId}&userId=${userId}`, {
                 method: 'POST',
@@ -123,29 +124,23 @@ const GroupDisplay = () => {
         }
     });
 
-    const { mutate: respondToRequest } = useMutation({
-        mutationFn: async ({ userId, accepted }: { userId: number, accepted: boolean }) => {
+    const {mutate: respondToRequest} = useMutation({
+        mutationFn: async ({userId, accepted}: { userId: number, accepted: boolean }) => {
             const response = await fetch(
                 `${process.env.EXPO_PUBLIC_API_URL}/group/request-response?id=${groupId}&userId=${userId}&accepted=${accepted}`,
-                { method: 'PUT', headers: authHeader }
+                {method: 'PUT', headers: authHeader}
             );
             if (response.ok) await refetch();
         }
     });
 
-    const { mutate: updateRsvp } = useMutation({
-        mutationFn: async ({ eventId, rsvp }: { eventId: number, rsvp: Rsvp }) => {
-            const response = await fetch(
-                `${process.env.EXPO_PUBLIC_API_URL}/event/rsvp?id=${groupId}&eventId=${eventId}&rsvp=${rsvp}`,
-                { method: 'PUT', headers: authHeader }
-            );
-            if (!response.ok) throw new Error('Failed to update RSVP');
-        },
-        onSuccess: async (_, { eventId }) => {
-            await queryClient.invalidateQueries({ queryKey: [`eventId-${eventId}`] });
-            await refetch();
-            setRsvpPickerEvent(null);
+    const {updateRsvp} = useRsvpUpdate(async () => {
+        if (rsvpPickerEvent) {
+            await queryClient.invalidateQueries({queryKey: [`eventId-${rsvpPickerEvent.id}`]});
         }
+        await queryClient.invalidateQueries({queryKey: ['events']});
+        await refetch();
+        setRsvpPickerEvent(null);
     });
 
     const pendingMembers = useMemo(() =>
@@ -174,10 +169,12 @@ const GroupDisplay = () => {
     }, [isLoading, group, currentRole]);
 
     if (isLoading || !user) {
-        return <View style={styles.centered}><ActivityIndicator size="large" /></View>;
+        return <View style={styles.centered}><ActivityIndicator size="large"/></View>;
     }
 
-    if (error) return null;
+    if (error) {
+        return null;
+    }
 
     const isOwner = currentRole === Role.owner;
     const isAdmin = currentRole === Role.admin || isOwner;
@@ -196,8 +193,8 @@ const GroupDisplay = () => {
             `Remove ${username}?`,
             `Are you sure you want to remove ${username} from ${group?.name}?`,
             [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Remove', style: 'destructive', onPress: () => removeMember(id) }
+                {text: 'Cancel', style: 'cancel'},
+                {text: 'Remove', style: 'destructive', onPress: () => removeMember(id)}
             ]
         );
     };
@@ -207,8 +204,8 @@ const GroupDisplay = () => {
             `Make ${username} owner?`,
             'Are you sure? This will change your role to admin.',
             [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Confirm', onPress: () => updateMember({ userId, role: Role.owner }) }
+                {text: 'Cancel', style: 'cancel'},
+                {text: 'Confirm', onPress: () => updateMember({userId, role: Role.owner})}
             ]
         );
     };
@@ -241,8 +238,11 @@ const GroupDisplay = () => {
                                 setTimeout(() => setRolePickerVisible(true), 300);
                             }}
                         >
-                            <Text style={{ color: '#333' }}>
-                                {getRoleOptions(currentRole!).find((o: { label: string; value: string }) => o.value === getRoleById(m.role))!.label}
+                            <Text style={{color: '#333'}}>
+                                {getRoleOptions(currentRole!).find((o: {
+                                    label: string;
+                                    value: string
+                                }) => o.value === getRoleById(m.role))!.label}
                             </Text>
                         </TouchableOpacity>
                     </View>
@@ -252,13 +252,13 @@ const GroupDisplay = () => {
                         <View style={styles.rejectionButton}>
                             <TouchableOpacity
                                 style={styles.button}
-                                onPress={() => respondToRequest({ userId: m.id, accepted: true })}
+                                onPress={() => respondToRequest({userId: m.id, accepted: true})}
                             >
                                 <Text style={styles.buttonText}>Accept</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={styles.removeButton}
-                                onPress={() => respondToRequest({ userId: m.id, accepted: false })}
+                                onPress={() => respondToRequest({userId: m.id, accepted: false})}
                             >
                                 <Text style={styles.removeText}>Decline</Text>
                             </TouchableOpacity>
@@ -291,7 +291,7 @@ const GroupDisplay = () => {
                         }
                     })}
                 >
-                    <Ionicons name="pencil-outline" size={14} color="#228be6" />
+                    <Ionicons name="pencil-outline" size={14} color="#228be6"/>
                     <Text style={styles.editText}>Edit</Text>
                 </TouchableOpacity>
             )}
@@ -304,7 +304,10 @@ const GroupDisplay = () => {
                 <View style={styles.actionRow}>
                     <TouchableOpacity
                         style={styles.button}
-                        onPress={() => { setMembersPanelOpened(false); setInvitePanelOpened(true); }}
+                        onPress={() => {
+                            setMembersPanelOpened(false);
+                            setInvitePanelOpened(true);
+                        }}
                     >
                         <Text style={styles.buttonText}>+ Invite User</Text>
                     </TouchableOpacity>
@@ -331,7 +334,8 @@ const GroupDisplay = () => {
                     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                         {activeMembers.filter(m => m.role !== Role.owner).map((m) => (
                             <View key={m.id} style={styles.memberChip}>
-                                <Text style={styles.memberChipName}>{m.firstName} {m.lastName} {m.id === user.id && '(you)'}</Text>
+                                <Text
+                                    style={styles.memberChipName}>{m.firstName} {m.lastName} {m.id === user.id && '(you)'}</Text>
                                 {m.id !== user.id && <Text style={styles.memberChipUsername}>{m.username}</Text>}
                             </View>
                         ))}
@@ -350,7 +354,7 @@ const GroupDisplay = () => {
                 {isCreator && (
                     <TouchableOpacity
                         style={styles.button}
-                        onPress={() => router.push({ pathname: '/new-event', params: { groupId: String(group?.id) } })}
+                        onPress={() => router.push({pathname: '/new-event', params: {groupId: String(group?.id)}})}
                     >
                         <Text style={styles.buttonText}>+ New Event</Text>
                     </TouchableOpacity>
@@ -371,13 +375,13 @@ const GroupDisplay = () => {
                             <View style={styles.eventCardFooter}>
                                 <Text style={styles.eventDate}>{formatEventDate(event.date)}</Text>
                                 <TouchableOpacity
-                                    style={[styles.rsvpPill, { backgroundColor: rsvpColor(event.myRsvp) + '22' }]}
+                                    style={[styles.rsvpPill, {backgroundColor: rsvpColor(event.myRsvp) + '22'}]}
                                     onPress={(e) => {
                                         e.stopPropagation();
                                         setRsvpPickerEvent(event);
                                     }}
                                 >
-                                    <Text style={[styles.rsvpPillText, { color: rsvpColor(event.myRsvp) }]}>
+                                    <Text style={[styles.rsvpPillText, {color: rsvpColor(event.myRsvp)}]}>
                                         {getRsvpLabelFor(event.myRsvp)} ▾
                                     </Text>
                                 </TouchableOpacity>
@@ -396,7 +400,14 @@ const GroupDisplay = () => {
                             <TouchableOpacity
                                 key={opt.value}
                                 style={styles.modalOption}
-                                onPress={() => updateRsvp({ eventId: rsvpPickerEvent.id, rsvp: Number(opt.value) as Rsvp })}
+                                onPress={() => {
+                                    void updateRsvp(
+                                        Number(groupId),
+                                        rsvpPickerEvent.id,
+                                        rsvpPickerEvent.repetition,
+                                        Number(opt.value) as Rsvp
+                                    );
+                                }}
                             >
                                 <Text style={styles.modalOptionText}>{opt.label}</Text>
                             </TouchableOpacity>
@@ -407,7 +418,8 @@ const GroupDisplay = () => {
                     </View>
                 </View>
             </Modal>
-            <Modal visible={membersPanelOpened} transparent animationType="slide" onRequestClose={() => setMembersPanelOpened(false)}>
+            <Modal visible={membersPanelOpened} transparent animationType="slide"
+                   onRequestClose={() => setMembersPanelOpened(false)}>
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
                         <Text style={styles.modalTitle}>All Members</Text>
@@ -439,7 +451,11 @@ const GroupDisplay = () => {
                 visible={invitePanelOpened}
                 transparent
                 animationType="slide"
-                onRequestClose={() => { setInvitePanelOpened(false); setSearchInvite(''); setInvitedUsers([]); }}
+                onRequestClose={() => {
+                    setInvitePanelOpened(false);
+                    setSearchInvite('');
+                    setInvitedUsers([]);
+                }}
             >
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
@@ -453,8 +469,12 @@ const GroupDisplay = () => {
                             autoCapitalize="none"
                         />
                         <ScrollView>
-                            {loadingSearch && <ActivityIndicator style={{ marginVertical: 8 }} />}
-                            {!loadingSearch && searchResults?.map((u: { id: number; username: string; invite_status: number | null }) => {
+                            {loadingSearch && <ActivityIndicator style={{marginVertical: 8}}/>}
+                            {!loadingSearch && searchResults?.map((u: {
+                                id: number;
+                                username: string;
+                                invite_status: number | null
+                            }) => {
                                 const alreadyInvited = u.invite_status !== null || invitedUsers.includes(u.id);
                                 return (
                                     <View key={u.id} style={styles.inviteRow}>
@@ -477,7 +497,11 @@ const GroupDisplay = () => {
                         </ScrollView>
                         <TouchableOpacity
                             style={styles.closeButton}
-                            onPress={() => { setInvitePanelOpened(false); setSearchInvite(''); setInvitedUsers([]); }}
+                            onPress={() => {
+                                setInvitePanelOpened(false);
+                                setSearchInvite('');
+                                setInvitedUsers([]);
+                            }}
                         >
                             <Text style={styles.closeButtonText}>Close</Text>
                         </TouchableOpacity>
@@ -497,8 +521,9 @@ const GroupDisplay = () => {
                                         confirmChangeOwner(rolePickerMember.id, rolePickerMember.username);
                                     } else {
                                         updateMember(
-                                            { userId: rolePickerMember.id, role: getRoleByValue(opt.value) },
-                                            { onSuccess: () => {
+                                            {userId: rolePickerMember.id, role: getRoleByValue(opt.value)},
+                                            {
+                                                onSuccess: () => {
                                                     setRolePickerVisible(false);
                                                     setRolePickerMember(null);
                                                     setTimeout(() => setMembersPanelOpened(true), 300);
@@ -524,6 +549,6 @@ const GroupDisplay = () => {
             </Modal>
         </ScrollView>
     );
-};
+}
 
 export default GroupDisplay;

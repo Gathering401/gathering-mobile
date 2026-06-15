@@ -1,12 +1,14 @@
-import {useState, useEffect} from 'react';
+import {useState} from 'react';
 import {useRouter} from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
-import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
+import {useQuery, useQueryClient} from '@tanstack/react-query';
 import {Calendar} from 'react-native-calendars';
 import {Text, TouchableOpacity, ScrollView, ActivityIndicator, View, Modal} from 'react-native';
 import dayjs from 'dayjs';
 import {styles} from "../../styles";
 import {Rsvp, getRsvpLabelFor, getRsvpsForDropdown} from "../../constants/enums/Rsvp";
+import {Repetition} from "../../constants/enums/Repetition";
+import {useAuthHeader} from '../../hooks/useAuthHeader';
+import {useRsvpUpdate} from '../../hooks/useRsvpUpdate';
 
 interface CalendarEvent {
     id: number;
@@ -16,60 +18,53 @@ interface CalendarEvent {
     groupId: number;
     groupName: string;
     myRsvp: Rsvp;
+    repetition: Repetition;
+    seriesId: number;
 }
 
 const rsvpColor = (rsvp: Rsvp): string => {
     switch (rsvp) {
-        case Rsvp.attending: return '#40c057';
-        case Rsvp.maybe: return '#fab005';
-        case Rsvp.rejected: return '#fa5252';
-        default: return '#868e96';
+        case Rsvp.attending:
+            return '#40c057';
+        case Rsvp.maybe:
+            return '#fab005';
+        case Rsvp.rejected:
+            return '#fa5252';
+        default:
+            return '#868e96';
     }
 };
 
 const Main = () => {
     const router = useRouter();
     const queryClient = useQueryClient();
-    const [token, setToken] = useState<string | null>(null);
     const [selectedDate, setSelectedDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
     const [rsvpPickerEvent, setRsvpPickerEvent] = useState<CalendarEvent | null>(null);
 
-    useEffect(() => {
-        SecureStore.getItemAsync('token').then(setToken);
-    }, []);
-
-    const authHeader = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-    };
+    const authHeader = useAuthHeader();
 
     const {isLoading, data: events = [], refetch} = useQuery<CalendarEvent[]>({
         queryKey: ['events'],
-        enabled: !!token,
+        enabled: !!authHeader.Authorization,
         queryFn: async () => {
             const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/event/all`, {
                 method: 'GET',
                 headers: authHeader
             });
             const data = await response.json();
-            if (data.success) return data.response;
+            if (data.success) {
+                return data.response;
+            }
             throw new Error(data.error);
         }
     });
 
-    const {mutate: updateRsvp} = useMutation({
-        mutationFn: async ({eventId, groupId, rsvp}: {eventId: number, groupId: number, rsvp: Rsvp}) => {
-            const response = await fetch(
-                `${process.env.EXPO_PUBLIC_API_URL}/event/rsvp?id=${groupId}&eventId=${eventId}&rsvp=${rsvp}`,
-                {method: 'PUT', headers: authHeader}
-            );
-            if (!response.ok) throw new Error('Failed to update RSVP');
-        },
-        onSuccess: async (_, {eventId}) => {
-            await queryClient.invalidateQueries({queryKey: [`eventId-${eventId}`]});
-            await refetch();
-            setRsvpPickerEvent(null);
+    const {updateRsvp} = useRsvpUpdate(async () => {
+        if (rsvpPickerEvent) {
+            await queryClient.invalidateQueries({queryKey: [`eventId-${rsvpPickerEvent.id}`]});
         }
+        await refetch();
+        setRsvpPickerEvent(null);
     });
 
     const eventsByDate = events.reduce<Record<string, CalendarEvent[]>>((acc, event) => {
@@ -166,15 +161,16 @@ const Main = () => {
                         <View style={styles.modalOverlay}>
                             <View style={styles.modalContent}>
                                 <Text style={styles.modalTitle}>Update RSVP</Text>
-                                {rsvpOptions.map((opt: {label: string; value: string}) => (
+                                {rsvpOptions.map((opt: { label: string; value: string }) => (
                                     <TouchableOpacity
                                         key={opt.value}
                                         style={styles.modalOption}
-                                        onPress={() => updateRsvp({
-                                            eventId: rsvpPickerEvent!.id,
-                                            groupId: rsvpPickerEvent!.groupId,
-                                            rsvp: Number(opt.value) as Rsvp
-                                        })}
+                                        onPress={() => updateRsvp(
+                                            rsvpPickerEvent!.groupId,
+                                            rsvpPickerEvent!.id,
+                                            rsvpPickerEvent!.repetition,
+                                            Number(opt.value) as Rsvp
+                                        )}
                                     >
                                         <Text style={styles.modalOptionText}>{opt.label}</Text>
                                     </TouchableOpacity>
@@ -189,6 +185,6 @@ const Main = () => {
             )}
         </ScrollView>
     );
-};
+}
 
-export default Main;
+export default Main

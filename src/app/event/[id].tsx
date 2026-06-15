@@ -1,7 +1,7 @@
 import {useEffect, useState} from 'react';
 import {useLocalSearchParams, useRouter} from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
-import {useMutation, useQuery, UseQueryResult} from '@tanstack/react-query';
+import {useQuery, UseQueryResult} from '@tanstack/react-query';
 import {ActivityIndicator, Clipboard, Modal, ScrollView, Text, TouchableOpacity, View} from 'react-native';
 import {Ionicons} from '@expo/vector-icons';
 import dayjs from 'dayjs';
@@ -10,33 +10,37 @@ import {getRsvpLabelFor, getRsvpsForDropdown, Rsvp} from '../../constants/enums/
 import {Role} from '../../constants/enums/Role';
 import {styles} from "../../styles/event";
 import {getRepetitionOptions, Repetition} from "../../constants/enums/Repetition";
+import {useRsvpUpdate} from '../../hooks/useRsvpUpdate';
+import {useAuthHeader} from '../../hooks/useAuthHeader';
 
 const rsvpSortOrder = [Rsvp.attending, Rsvp.maybe, Rsvp.pending, Rsvp.rejected];
 
 const rsvpColor = (rsvp: Rsvp): string => {
     switch (rsvp) {
-        case Rsvp.attending: return '#40c057';
-        case Rsvp.maybe: return '#fab005';
-        case Rsvp.rejected: return '#fa5252';
-        default: return '#868e96';
+        case Rsvp.attending:
+            return '#40c057';
+        case Rsvp.maybe:
+            return '#fab005';
+        case Rsvp.rejected:
+            return '#fa5252';
+        default:
+            return '#868e96';
     }
 };
 
 const getRepetitionLabel = (value: Repetition): string => {
-    if(value === Repetition.none) {
-        return 'Just once'
+    if (value === Repetition.none) {
+        return 'Just once';
     }
-
     const key = Object.keys(Repetition).find(k => Repetition[k as keyof typeof Repetition] === value);
     return getRepetitionOptions().find(o => o.value === key)?.label ?? 'Just once';
 };
 
 const EventDisplay = () => {
     const router = useRouter();
-    const { id: eventId } = useLocalSearchParams();
+    const {id: eventId} = useLocalSearchParams();
     const params = useLocalSearchParams();
     const groupId = params.groupId;
-    const [token, setToken] = useState<string | null>(null);
     const [user, setUser] = useState<any>(null);
     const [guestListOpened, setGuestListOpened] = useState(false);
     const [editModalOpened, setEditModalOpened] = useState(false);
@@ -44,19 +48,15 @@ const EventDisplay = () => {
     const [showRsvpPicker, setShowRsvpPicker] = useState(false);
     const [showSeriesModal, setShowSeriesModal] = useState(false);
 
+    const authHeader = useAuthHeader();
+
     useEffect(() => {
-        SecureStore.getItemAsync('token').then(setToken);
         SecureStore.getItemAsync('user').then(u => u && setUser(JSON.parse(u)));
     }, []);
 
-    const authHeader = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-    };
-
-    const { isLoading, data: event, error, refetch }: UseQueryResult = useQuery<Event>({
+    const {isLoading, data: event, error, refetch}: UseQueryResult = useQuery<Event>({
         queryKey: [`eventId-${eventId}`],
-        enabled: !!token && !!groupId,
+        enabled: !!authHeader.Authorization && !!groupId,
         queryFn: async () => {
             const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/event?eventId=${eventId}&id=${groupId}`, {
                 method: 'GET',
@@ -70,18 +70,7 @@ const EventDisplay = () => {
         }
     });
 
-    const { mutate: updateRsvp } = useMutation({
-        mutationFn: async (rsvp: Rsvp) => {
-            const response = await fetch(
-                `${process.env.EXPO_PUBLIC_API_URL}/event/rsvp?id=${groupId}&eventId=${eventId}&rsvp=${rsvp}`,
-                { method: 'PUT', headers: authHeader }
-            );
-            if (!response.ok) {
-                throw new Error('Failed to update RSVP');
-            }
-        },
-        onSuccess: () => refetch()
-    });
+    const {updateRsvp} = useRsvpUpdate(() => refetch());
 
     useEffect(() => {
         if (error) {
@@ -90,7 +79,7 @@ const EventDisplay = () => {
     }, [error]);
 
     if (isLoading || !user) {
-        return <View style={styles.centered}><ActivityIndicator size="large" /></View>;
+        return <View style={styles.centered}><ActivityIndicator size="large"/></View>;
     }
 
     if (!event) {
@@ -145,7 +134,7 @@ const EventDisplay = () => {
         <ScrollView contentContainerStyle={styles.container}>
             {canEdit && (
                 <TouchableOpacity style={styles.editButton} onPress={handleEditClick}>
-                    <Ionicons name="pencil-outline" size={14} color="#228be6" />
+                    <Ionicons name="pencil-outline" size={14} color="#228be6"/>
                     <Text style={styles.editText}>Edit</Text>
                 </TouchableOpacity>
             )}
@@ -172,7 +161,8 @@ const EventDisplay = () => {
             </View>
             <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Price:</Text>
-                <Text style={styles.detailValue}>{Number(event.cost) > 0 ? `$${Number(event.cost).toFixed(2)}` : 'FREE'}</Text>
+                <Text
+                    style={styles.detailValue}>{Number(event.cost) > 0 ? `$${Number(event.cost).toFixed(2)}` : 'FREE'}</Text>
             </View>
             {(myRsvp === Rsvp.pending || myRsvp === Rsvp.rejected) && (
                 <View style={styles.detailRow}>
@@ -192,10 +182,10 @@ const EventDisplay = () => {
             <View style={styles.rsvpRow}>
                 <Text style={styles.detailLabel}>My RSVP:</Text>
                 <TouchableOpacity
-                    style={[styles.rsvpButton, { backgroundColor: rsvpColor(myRsvp ?? Rsvp.pending) + '22' }]}
+                    style={[styles.rsvpButton, {backgroundColor: rsvpColor(myRsvp ?? Rsvp.pending) + '22'}]}
                     onPress={() => setShowRsvpPicker(true)}
                 >
-                    <Text style={[styles.rsvpButtonText, { color: rsvpColor(myRsvp ?? Rsvp.pending) }]}>
+                    <Text style={[styles.rsvpButtonText, {color: rsvpColor(myRsvp ?? Rsvp.pending)}]}>
                         {getRsvpLabelFor(myRsvp ?? Rsvp.pending)} ▾
                     </Text>
                 </TouchableOpacity>
@@ -209,7 +199,7 @@ const EventDisplay = () => {
                                 key={opt.value}
                                 style={styles.modalOption}
                                 onPress={() => {
-                                    updateRsvp(Number(opt.value) as Rsvp);
+                                    updateRsvp(Number(groupId), Number(eventId), event.repetition, Number(opt.value) as Rsvp);
                                     setShowRsvpPicker(false);
                                 }}
                             >
@@ -229,15 +219,21 @@ const EventDisplay = () => {
                         <Text style={styles.modalBody}>Would you like to edit the series or just this single event?</Text>
                         <TouchableOpacity
                             style={styles.modalButton}
-                            onPress={() => { setEditModalOpened(false); navigateToEdit(); }}
+                            onPress={() => {
+                                setEditModalOpened(false);
+                                navigateToEdit();
+                            }}
                         >
                             <Text style={styles.modalButtonText}>This Event Only</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                             style={[styles.modalButton, styles.modalButtonPrimary]}
-                            onPress={() => { setEditModalOpened(false); navigateToEdit(event.seriesId); }}
+                            onPress={() => {
+                                setEditModalOpened(false);
+                                navigateToEdit(event.seriesId);
+                            }}
                         >
-                            <Text style={[styles.modalButtonText, { color: '#fff' }]}>Entire Series</Text>
+                            <Text style={[styles.modalButtonText, {color: '#fff'}]}>Entire Series</Text>
                         </TouchableOpacity>
                         <TouchableOpacity onPress={() => setEditModalOpened(false)}>
                             <Text style={styles.modalCancel}>Cancel</Text>
@@ -253,8 +249,8 @@ const EventDisplay = () => {
                             {sortedRsvps.map(r => (
                                 <View key={r.userId} style={styles.guestRow}>
                                     <Text>{r.fullName} ({r.username})</Text>
-                                    <View style={[styles.rsvpBadge, { backgroundColor: rsvpColor(r.rsvp) + '22' }]}>
-                                        <Text style={[styles.rsvpBadgeText, { color: rsvpColor(r.rsvp) }]}>
+                                    <View style={[styles.rsvpBadge, {backgroundColor: rsvpColor(r.rsvp) + '22'}]}>
+                                        <Text style={[styles.rsvpBadgeText, {color: rsvpColor(r.rsvp)}]}>
                                             {getRsvpLabelFor(r.rsvp)}
                                         </Text>
                                     </View>
@@ -289,6 +285,6 @@ const EventDisplay = () => {
             </Modal>
         </ScrollView>
     );
-};
+}
 
 export default EventDisplay;
