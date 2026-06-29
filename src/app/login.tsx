@@ -1,13 +1,14 @@
-import { useState } from 'react';
-import { useRouter } from 'expo-router';
+import {useState} from 'react';
+import {useRouter} from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
-import { useForm, Controller } from 'react-hook-form';
+import {useForm, Controller} from 'react-hook-form';
 import Toast from 'react-native-toast-message';
 import {
     View, Text, TextInput, TouchableOpacity,
     KeyboardAvoidingView, Platform
 } from 'react-native';
 import {styles} from "../styles/login";
+import {usePushToken} from "../hooks/usePushToken";
 
 interface LogInValues {
     username: string;
@@ -17,12 +18,13 @@ interface LogInValues {
 const LogIn = () => {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
-    const { control, handleSubmit } = useForm<LogInValues>({
+    const {control, handleSubmit} = useForm<LogInValues>({
         defaultValues: {
             username: '',
             password: ''
         }
     });
+    const { registerPushToken } = usePushToken();
 
     const onSubmit = async (values: LogInValues) => {
         setLoading(true);
@@ -30,7 +32,7 @@ const LogIn = () => {
             const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/login`, {
                 body: JSON.stringify(values),
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
+                headers: {'Content-Type': 'application/json'}
             });
 
             const data = await response.json();
@@ -38,12 +40,13 @@ const LogIn = () => {
             if (data.success) {
                 await SecureStore.setItemAsync('token', data.token);
                 await SecureStore.setItemAsync('user', JSON.stringify(data.user));
+                await registerPushToken(data.token);
                 router.replace('/');
             } else {
-                Toast.show({ type: 'error', text1: 'Invalid username or password' });
+                Toast.show({type: 'error', text1: 'Invalid username or password'});
             }
         } catch {
-            Toast.show({ type: 'error', text1: 'Something went wrong. Please try again.' });
+            Toast.show({type: 'error', text1: 'Something went wrong. Please try again.'});
         } finally {
             setLoading(false);
         }
@@ -58,7 +61,7 @@ const LogIn = () => {
             <Controller
                 control={control}
                 name="username"
-                render={({ field: { onChange, value } }) => (
+                render={({field: {onChange, value}}) => (
                     <View style={styles.fieldContainer}>
                         <Text style={styles.label}>Username</Text>
                         <TextInput
@@ -74,7 +77,7 @@ const LogIn = () => {
             <Controller
                 control={control}
                 name="password"
-                render={({ field: { onChange, value } }) => (
+                render={({field: {onChange, value}}) => (
                     <View style={styles.fieldContainer}>
                         <Text style={styles.label}>Password</Text>
                         <TextInput
@@ -94,10 +97,13 @@ const LogIn = () => {
             >
                 <Text style={styles.buttonText}>{loading ? 'Logging in...' : 'Submit'}</Text>
             </TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push('/forgot-password')}>
+                <Text style={styles.link}>Forgot your password?</Text>
+            </TouchableOpacity>
             <TouchableOpacity onPress={() => router.push('/signup')}>
                 <Text style={styles.link}>Don't have an account yet? Sign up here</Text>
             </TouchableOpacity>
-            <Toast />
+            <Toast/>
         </KeyboardAvoidingView>
     );
 };

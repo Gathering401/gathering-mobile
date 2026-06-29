@@ -1,8 +1,8 @@
 import {useEffect, useState} from 'react';
 import {useLocalSearchParams, useRouter} from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
-import {useQuery, UseQueryResult} from '@tanstack/react-query';
-import {ActivityIndicator, Clipboard, Modal, ScrollView, Text, TouchableOpacity, View} from 'react-native';
+import {useQuery, useMutation, useQueryClient, UseQueryResult} from '@tanstack/react-query';
+import {ActivityIndicator, Clipboard, Modal, ScrollView, Switch, Text, TouchableOpacity, View} from 'react-native';
 import {Ionicons} from '@expo/vector-icons';
 import dayjs from 'dayjs';
 import {Event} from '../../constants/Event';
@@ -41,6 +41,7 @@ const EventDisplay = () => {
     const {id: eventId} = useLocalSearchParams();
     const params = useLocalSearchParams();
     const groupId = params.groupId;
+    const queryClient = useQueryClient();
     const [user, setUser] = useState<any>(null);
     const [guestListOpened, setGuestListOpened] = useState(false);
     const [editModalOpened, setEditModalOpened] = useState(false);
@@ -67,6 +68,21 @@ const EventDisplay = () => {
                 return data.response;
             }
             throw new Error(data.error);
+        }
+    });
+
+    const {mutate: updateNotifications} = useMutation({
+        mutationFn: async (notifications: boolean) => {
+            const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/event/notifications`, {
+                method: 'PUT',
+                headers: {...authHeader, 'Content-Type': 'application/json'},
+                body: JSON.stringify({eventId: Number(eventId), notifications})
+            });
+            const data = await response.json();
+            if (!data.success) throw new Error(data.error);
+        },
+        onSuccess: () => {
+            void queryClient.invalidateQueries({queryKey: [`eventId-${eventId}`]});
         }
     });
 
@@ -190,6 +206,13 @@ const EventDisplay = () => {
                     </Text>
                 </TouchableOpacity>
             </View>
+            <View style={styles.rsvpRow}>
+                <Text style={styles.detailLabel}>Notifications:</Text>
+                <Switch
+                    value={event.myNotifications}
+                    onValueChange={(value) => updateNotifications(value)}
+                />
+            </View>
             <Modal visible={showRsvpPicker} transparent animationType="slide">
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
@@ -216,7 +239,8 @@ const EventDisplay = () => {
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
                         <Text style={styles.modalTitle}>Edit Event</Text>
-                        <Text style={styles.modalBody}>Would you like to edit the series or just this single event?</Text>
+                        <Text style={styles.modalBody}>Would you like to edit the series or just this single
+                            event?</Text>
                         <TouchableOpacity
                             style={styles.modalButton}
                             onPress={() => {

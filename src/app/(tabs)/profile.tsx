@@ -59,12 +59,15 @@ const Profile = () => {
                     <Ionicons name="pencil-outline" size={14} color="#228be6" />
                     <Text style={styles.editText}>Edit</Text>
                 </TouchableOpacity>
+                <TouchableOpacity style={styles.editButton} onPress={() => router.push('/change-password')}>
+                    <Ionicons name="lock-closed-outline" size={14} color="#228be6" />
+                    <Text style={styles.editText}>Change Password</Text>
+                </TouchableOpacity>
                 <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
                     <Ionicons name="log-out-outline" size={14} color="#fa5252" />
                     <Text style={styles.logoutText}>Logout</Text>
                 </TouchableOpacity>
             </View>
-
             <Text style={styles.title}>Profile</Text>
             <Text style={styles.username}>{user.username}</Text>
             <Text style={styles.name}>{user.firstName} {user.lastName}</Text>

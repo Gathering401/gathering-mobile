@@ -15,18 +15,17 @@ export default function RootLayout() {
     useEffect(() => {
         const checkAuth = async () => {
             const token = await SecureStore.getItemAsync('token');
-            const inAuthGroup = segments[0] === 'login';
-            const inSignup = segments[0] === 'signup';
+            const beforeAuth = ['login', 'signup', 'forgot-password', 'reset-password'].includes(segments[0]);
 
             if (!token) {
-                if (!inAuthGroup && !inSignup) {
+                if (!beforeAuth) {
                     setTimeout(() => router.replace('/login'), 0);
                 }
                 setIsReady(true);
                 return;
             }
 
-            if (inAuthGroup) {
+            if (segments[0] === 'login') {
                 setTimeout(() => router.replace('/(tabs)'), 0);
                 setIsReady(true);
                 return;

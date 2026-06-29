@@ -10,6 +10,7 @@ import {
     KeyboardAvoidingView, Platform, ScrollView
 } from 'react-native';
 import {styles} from "../styles/signup";
+import {usePushToken} from "../hooks/usePushToken";
 
 interface SignUpValues {
     username: string;
@@ -38,6 +39,7 @@ const SignUp = () => {
     const router = useRouter();
     const params = useLocalSearchParams();
     const [loading, setLoading] = useState(false);
+    const { registerPushToken } = usePushToken();
 
     const isEdit = params.isEdit === 'true';
     const [token, setToken] = useState<string | null>(null);
@@ -107,6 +109,7 @@ const SignUp = () => {
                 if (!isEdit) {
                     await SecureStore.setItemAsync('token', data.token);
                     await SecureStore.setItemAsync('user', JSON.stringify(data.response));
+                    await registerPushToken(data.token);
                 } else {
                     const current = await SecureStore.getItemAsync('user');
                     const currentUser = current ? JSON.parse(current) : {};
