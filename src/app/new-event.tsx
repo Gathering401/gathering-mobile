@@ -194,7 +194,7 @@ const EventForm = () => {
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
             <ScrollView contentContainerStyle={styles.container}>
                 <Text style={styles.title}>{isEditing ? 'Edit Event' : 'New Event'}</Text>
-                {(['name', 'description', 'location'] as const).map((field) => (
+                {(['name', 'description'] as const).map((field) => (
                     <Controller
                         key={field}
                         control={control}
@@ -205,7 +205,7 @@ const EventForm = () => {
                                 <TextInput
                                     style={[styles.input, field === 'description' && styles.textarea]}
                                     placeholder={_.startCase(field)}
-                                    maxLength={field === 'name' ? 50 : field === 'description' ? 500 : 100}
+                                    maxLength={field === 'name' ? 50 : 500}
                                     multiline={field === 'description'}
                                     numberOfLines={field === 'description' ? 4 : 1}
                                     value={value as string}
@@ -215,6 +215,23 @@ const EventForm = () => {
                         )}
                     />
                 ))}
+                <Controller
+                    control={control}
+                    name="location"
+                    render={({ field: { onChange, value } }) => (
+                        <View style={styles.fieldContainer}>
+                            <Text style={styles.label}>Location</Text>
+                            <TextInput
+                                style={[styles.input, !!businessInvitationId && styles.disabled]}
+                                placeholder="Location"
+                                maxLength={100}
+                                editable={!businessInvitationId}
+                                value={value as string}
+                                onChangeText={onChange}
+                            />
+                        </View>
+                    )}
+                />
                 <Controller
                     control={control}
                     name="cost"

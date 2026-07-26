@@ -7,4 +7,6 @@ export interface ActiveInvitation {
     dateEnd: string | null;
     slotPosition: number;
     asPushNotification: boolean;
+    locationAddress: string;
+    averageCost: number;
 }

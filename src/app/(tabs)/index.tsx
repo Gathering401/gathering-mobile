@@ -3,7 +3,16 @@ import {useLocalSearchParams, useRouter} from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {Calendar} from 'react-native-calendars';
-import {Text, TouchableOpacity, ScrollView, ActivityIndicator, View, Modal} from 'react-native';
+import {
+    Text,
+    TouchableOpacity,
+    ScrollView,
+    ActivityIndicator,
+    View,
+    Modal,
+    Alert,
+    TouchableWithoutFeedback
+} from 'react-native';
 import dayjs from 'dayjs';
 import {styles} from "../../styles";
 import {Rsvp, getRsvpLabelFor, getRsvpsForDropdown} from "../../constants/enums/Rsvp";
@@ -26,17 +35,17 @@ const rsvpColor = (rsvp: Rsvp): string => {
         default:
             return '#868e96';
     }
-};
+}
 
 const formatInvitationDate = (dateStart: string | null, dateEnd: string | null): string => {
     if (!dateStart) {
         return 'Flexible dates';
     }
     if (!dateEnd || dateEnd === dateStart) {
-        return dayjs(dateStart).format('MMM D');
+        return `Available ${dayjs(dateStart).format('MMM D')}, but schedule anytime!`;
     }
-    return `${dayjs(dateStart).format('MMM D')} - ${dayjs(dateEnd).format('MMM D')}`;
-};
+    return `Available ${dayjs(dateStart).format('MMM D')} - ${dayjs(dateEnd).format('MMM D')}, but schedule anytime!`;
+}
 
 const Main = () => {
     const router = useRouter();
@@ -252,44 +261,68 @@ const Main = () => {
                         </View>
                     </Modal>
                     <Modal visible={!!selectedInvitation} transparent animationType="slide">
-                        <View style={styles.modalOverlay}>
-                            <View style={styles.modalContent}>
-                                <Text style={styles.cardGroupScroll}>
-                                    {selectedInvitation?.businessName}
-                                </Text>
-                                <Text style={styles.modalTitle}>{selectedInvitation?.name}</Text>
-                                <Text style={styles.emptyText}>{selectedInvitation?.description}</Text>
-                                <Text style={[styles.cardTime, {marginTop: 12}]}>
-                                    {selectedInvitation && formatInvitationDate(selectedInvitation.dateStart, selectedInvitation.dateEnd)}
-                                </Text>
-                                <TouchableOpacity
-                                    style={styles.submitButton}
-                                    onPress={() => {
-                                        const invitation = selectedInvitation!;
-                                        setSelectedInvitation(null);
-                                        router.push({
-                                            pathname: '/new-event',
-                                            params: {
-                                                name: invitation.name,
-                                                description: invitation.description,
-                                                businessInvitationId: String(invitation.id)
-                                            }
-                                        });
-                                    }}
-                                >
-                                    <Text style={styles.submitText}>Create Event</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    style={styles.modalOption}
-                                    onPress={() => declineMutation.mutate(selectedInvitation!.id)}
-                                >
-                                    <Text style={[styles.modalOptionText, {color: '#fa5252'}]}>Decline</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity onPress={() => setSelectedInvitation(null)}>
-                                    <Text style={styles.modalCancel}>Close</Text>
-                                </TouchableOpacity>
+                        <TouchableWithoutFeedback onPress={() => setSelectedInvitation(null)}>
+                            <View style={styles.modalOverlay}>
+                                <TouchableWithoutFeedback onPress={() => {}}>
+                                    <View style={styles.modalContent}>
+                                        <Text style={styles.cardGroupScroll}>
+                                            {selectedInvitation?.businessName}
+                                        </Text>
+                                        <Text style={styles.modalTitle}>{selectedInvitation?.name}</Text>
+                                        <Text style={styles.emptyText}>{selectedInvitation?.description}</Text>
+                                        <Text style={[styles.cardTime, {marginTop: 12}]}>
+                                            {selectedInvitation && formatInvitationDate(selectedInvitation.dateStart, selectedInvitation.dateEnd)}
+                                        </Text>
+                                        <View style={styles.modalButtonRow}>
+                                            <TouchableOpacity
+                                                style={styles.closeButtonOutline}
+                                                onPress={() => setSelectedInvitation(null)}
+                                            >
+                                                <Text style={styles.closeButtonText}>Close</Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity
+                                                style={styles.createEventButton}
+                                                onPress={() => {
+                                                    const invitation = selectedInvitation!;
+                                                    setSelectedInvitation(null);
+                                                    router.push({
+                                                        pathname: '/new-event',
+                                                        params: {
+                                                            name: invitation.name,
+                                                            description: invitation.description,
+                                                            location: invitation.locationAddress,
+                                                            cost: String(invitation.averageCost),
+                                                            businessInvitationId: String(invitation.id)
+                                                        }
+                                                    });
+                                                }}
+                                            >
+                                                <Text style={styles.submitText}>Create Event</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                        <TouchableOpacity
+                                            style={styles.cancelButton}
+                                            onPress={() => {
+                                                Alert.alert(
+                                                    'Decline invitation?',
+                                                    'You won\'t be asked about this invitation again.',
+                                                    [
+                                                        {text: 'Cancel', style: 'cancel'},
+                                                        {
+                                                            text: 'Decline',
+                                                            style: 'destructive',
+                                                            onPress: () => declineMutation.mutate(selectedInvitation!.id)
+                                                        }
+                                                    ]
+                                                );
+                                            }}
+                                        >
+                                            <Text style={styles.rejectionText}>Not interested, don't ask again</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </TouchableWithoutFeedback>
                             </View>
-                        </View>
+                        </TouchableWithoutFeedback>
                     </Modal>
                     <Text style={styles.dateTitle}>Recommended Events</Text>
                     {invitationsLoading ? (

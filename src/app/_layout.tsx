@@ -51,7 +51,6 @@ export default function RootLayout() {
                     setTimeout(() => router.replace('/login'), 0);
                 }
             } catch {
-                // Network error — fail open
             }
 
             setIsReady(true);
@@ -73,6 +72,26 @@ export default function RootLayout() {
 
         return () => subscription.remove();
     }, []);
+
+    useEffect(() => {
+        if (!isReady) {
+            return;
+        }
+
+        const response = Notifications.getLastNotificationResponse();
+        if (response) {
+            const invitationId = response.notification.request.content.data?.invitationId;
+            if (invitationId) {
+                setTimeout(() => {
+                    router.push({
+                        pathname: '/(tabs)',
+                        params: {invitationId: String(invitationId)}
+                    });
+                }, 0);
+            }
+            Notifications.clearLastNotificationResponse();
+        }
+    }, [isReady]);
 
     if (!isReady) {
         return (
