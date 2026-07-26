@@ -7,8 +7,10 @@ export const styles = StyleSheet.create({
     card: { marginHorizontal: 16, marginBottom: 8, borderWidth: 1, borderColor: '#ddd', borderRadius: 8, padding: 12, backgroundColor: '#fff' },
     cardTitle: { fontSize: 15, fontWeight: '600' },
     cardGroup: { fontSize: 13, color: '#666', marginTop: 2 },
+    cardGroupScroll: { fontSize: 13, marginTop: 2, color: '#12b886', fontWeight: '600' },
     cardTime: { fontSize: 13, color: '#444' },
     cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
+    submitText: { color: '#fff', fontWeight: '600', fontSize: 16 },
     rsvpPill: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
     rsvpPillText: { fontSize: 12, fontWeight: '600' },
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
@@ -17,4 +19,5 @@ export const styles = StyleSheet.create({
     modalOption: { paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#eee' },
     modalOptionText: { fontSize: 16 },
     modalCancel: { textAlign: 'center', color: '#228be6', marginTop: 16, fontSize: 16 },
+    submitButton: { flex: 1, backgroundColor: '#228be6', borderRadius: 8, padding: 14, alignItems: 'center' }
 });

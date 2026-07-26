@@ -1,11 +1,20 @@
 import { useEffect, useState } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
+import * as Notifications from 'expo-notifications';
 import {View, ActivityIndicator, TouchableOpacity} from 'react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {Ionicons} from "@expo/vector-icons";
 
 const queryClient = new QueryClient();
+
+Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+    }),
+});
 
 export default function RootLayout() {
     const router = useRouter();
@@ -50,6 +59,20 @@ export default function RootLayout() {
 
         void checkAuth();
     }, [segments]);
+
+    useEffect(() => {
+        const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+            const invitationId = response.notification.request.content.data?.invitationId;
+            if (invitationId) {
+                router.push({
+                    pathname: '/(tabs)',
+                    params: {invitationId: String(invitationId)}
+                });
+            }
+        });
+
+        return () => subscription.remove();
+    }, []);
 
     if (!isReady) {
         return (

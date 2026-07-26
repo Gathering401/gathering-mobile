@@ -1,6 +1,7 @@
-import {useState} from 'react';
-import {useRouter} from 'expo-router';
-import {useQuery, useQueryClient} from '@tanstack/react-query';
+import {useState, useEffect} from 'react';
+import {useLocalSearchParams, useRouter} from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
+import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {Calendar} from 'react-native-calendars';
 import {Text, TouchableOpacity, ScrollView, ActivityIndicator, View, Modal} from 'react-native';
 import dayjs from 'dayjs';
@@ -9,18 +10,10 @@ import {Rsvp, getRsvpLabelFor, getRsvpsForDropdown} from "../../constants/enums/
 import {Repetition} from "../../constants/enums/Repetition";
 import {useAuthHeader} from '../../hooks/useAuthHeader';
 import {useRsvpUpdate} from '../../hooks/useRsvpUpdate';
+import {CalendarEvent} from "../../constants/CalendarEvent";
+import {ActiveInvitation} from "../../constants/ActiveInvitation";
 
-interface CalendarEvent {
-    id: number;
-    name: string;
-    description: string;
-    date: string;
-    groupId: number;
-    groupName: string;
-    myRsvp: Rsvp;
-    repetition: Repetition;
-    seriesId: number;
-}
+const APP_OPEN_PROMPT_KEY = 'lastInvitationPromptShown';
 
 const rsvpColor = (rsvp: Rsvp): string => {
     switch (rsvp) {
@@ -35,11 +28,24 @@ const rsvpColor = (rsvp: Rsvp): string => {
     }
 };
 
+const formatInvitationDate = (dateStart: string | null, dateEnd: string | null): string => {
+    if (!dateStart) {
+        return 'Flexible dates';
+    }
+    if (!dateEnd || dateEnd === dateStart) {
+        return dayjs(dateStart).format('MMM D');
+    }
+    return `${dayjs(dateStart).format('MMM D')} - ${dayjs(dateEnd).format('MMM D')}`;
+};
+
 const Main = () => {
     const router = useRouter();
     const queryClient = useQueryClient();
     const [selectedDate, setSelectedDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
     const [rsvpPickerEvent, setRsvpPickerEvent] = useState<CalendarEvent | null>(null);
+    const [selectedInvitation, setSelectedInvitation] = useState<ActiveInvitation | null>(null);
+
+    const params = useLocalSearchParams<{invitationId?: string}>();
 
     const authHeader = useAuthHeader();
 
@@ -56,6 +62,70 @@ const Main = () => {
                 return data.response;
             }
             throw new Error(data.error);
+        }
+    });
+
+    const {isLoading: invitationsLoading, data: invitations = []} = useQuery<ActiveInvitation[]>({
+        queryKey: ['activeInvitations'],
+        enabled: !!authHeader.Authorization,
+        queryFn: async () => {
+            const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/event/invitations`, {
+                method: 'GET',
+                headers: authHeader
+            });
+            const data = await response.json();
+            if (data.success) {
+                return data.response;
+            }
+            throw new Error(data.error);
+        }
+    });
+
+    useEffect(() => {
+        if (invitationsLoading || !invitations.length) {
+            return;
+        }
+
+        if (params.invitationId) {
+            const tapped = invitations.find(i => String(i.id) === params.invitationId);
+            if (tapped) {
+                setSelectedInvitation(tapped);
+            }
+            return;
+        }
+
+        const pushSlotInvitation = invitations.find(i => i.slotPosition === 1);
+        if (!pushSlotInvitation) {
+            return;
+        }
+
+        const today = dayjs().format('YYYY-MM-DD');
+        const expectedKey = `${today}:${pushSlotInvitation.id}`;
+
+        SecureStore.getItemAsync(APP_OPEN_PROMPT_KEY).then((lastShownKey) => {
+            if (lastShownKey === expectedKey) {
+                return;
+            }
+            setSelectedInvitation(pushSlotInvitation);
+            SecureStore.setItemAsync(APP_OPEN_PROMPT_KEY, expectedKey);
+        });
+    }, [invitationsLoading, invitations, params.invitationId]);
+
+    const declineMutation = useMutation({
+        mutationFn: async (businessInvitationId: number) => {
+            const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/event/invitations/decline`, {
+                method: 'PUT',
+                headers: {...authHeader, 'Content-Type': 'application/json'},
+                body: JSON.stringify({businessInvitationId})
+            });
+            const data = await response.json();
+            if (!data.success) {
+                throw new Error(data.error);
+            }
+        },
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({queryKey: ['activeInvitations']});
+            setSelectedInvitation(null);
         }
     });
 
@@ -181,10 +251,74 @@ const Main = () => {
                             </View>
                         </View>
                     </Modal>
+                    <Modal visible={!!selectedInvitation} transparent animationType="slide">
+                        <View style={styles.modalOverlay}>
+                            <View style={styles.modalContent}>
+                                <Text style={styles.cardGroupScroll}>
+                                    {selectedInvitation?.businessName}
+                                </Text>
+                                <Text style={styles.modalTitle}>{selectedInvitation?.name}</Text>
+                                <Text style={styles.emptyText}>{selectedInvitation?.description}</Text>
+                                <Text style={[styles.cardTime, {marginTop: 12}]}>
+                                    {selectedInvitation && formatInvitationDate(selectedInvitation.dateStart, selectedInvitation.dateEnd)}
+                                </Text>
+                                <TouchableOpacity
+                                    style={styles.submitButton}
+                                    onPress={() => {
+                                        const invitation = selectedInvitation!;
+                                        setSelectedInvitation(null);
+                                        router.push({
+                                            pathname: '/new-event',
+                                            params: {
+                                                name: invitation.name,
+                                                description: invitation.description,
+                                                businessInvitationId: String(invitation.id)
+                                            }
+                                        });
+                                    }}
+                                >
+                                    <Text style={styles.submitText}>Create Event</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={styles.modalOption}
+                                    onPress={() => declineMutation.mutate(selectedInvitation!.id)}
+                                >
+                                    <Text style={[styles.modalOptionText, {color: '#fa5252'}]}>Decline</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity onPress={() => setSelectedInvitation(null)}>
+                                    <Text style={styles.modalCancel}>Close</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </Modal>
+                    <Text style={styles.dateTitle}>Recommended Events</Text>
+                    {invitationsLoading ? (
+                        <ActivityIndicator size="small" style={{marginTop: 12}}/>
+                    ) : invitations.length === 0 ? (
+                        <Text style={styles.emptyText}>No invitations right now</Text>
+                    ) : (
+                        invitations.map((invitation) => (
+                            <TouchableOpacity
+                                key={invitation.id}
+                                style={[styles.card, {borderLeftWidth: 4, borderLeftColor: '#12b886'}]}
+                                onPress={() => setSelectedInvitation(invitation)}
+                            >
+                                <Text style={styles.cardGroupScroll}>
+                                    {invitation.businessName}
+                                </Text>
+                                <Text style={styles.cardTitle}>{invitation.name}</Text>
+                                <View style={styles.cardFooter}>
+                                    <Text style={styles.cardTime}>
+                                        {formatInvitationDate(invitation.dateStart, invitation.dateEnd)}
+                                    </Text>
+                                </View>
+                            </TouchableOpacity>
+                        ))
+                    )}
                 </>
             )}
         </ScrollView>
     );
 }
 
-export default Main
+export default Main;

@@ -19,6 +19,7 @@ interface SignUpValues {
     lastName: string;
     birthdate: string;
     phone: string;
+    zipCode: string;
     password: string;
     confirmPassword: string;
 }
@@ -27,6 +28,7 @@ const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$
 const emailRegex = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
 const nameRegex = /^[a-z ,.'-]{2,64}$/i;
 const phoneRegex = /^\d{3}-\d{3}-\d{4}$/;
+const zipCodeRegex = /^\d{5}$/;
 
 const formatPhone = (value: string) => {
     const digits = value.replace(/\D/g, '').slice(0, 10);
@@ -55,6 +57,7 @@ const SignUp = () => {
             lastName: (params.lastName as string) ?? '',
             birthdate: params.birthdate ? dayjs(params.birthdate as string).format('MM/DD/YYYY') : '',
             phone: (params.phone as string) ?? '',
+            zipCode: (params.zipCode as string) ?? '',
             password: '',
             confirmPassword: ''
         }
@@ -76,6 +79,9 @@ const SignUp = () => {
         if (!phoneRegex.test(values.phone)) {
             return Toast.show({ type: 'error', text1: 'Phone', text2: 'Format must be ###-###-####' });
         }
+        if (!zipCodeRegex.test(values.zipCode)) {
+            return Toast.show({ type: 'error', text1: 'Zip Code', text2: 'Please enter a valid 5 digit zip code' });
+        }
         if (!isEdit && !passwordRegex.test(values.password)) {
             return Toast.show({ type: 'error', text1: 'Password', text2: 'Minimum 8 characters, 1 number, 1 uppercase, 1 lowercase, 1 symbol' });
         }
@@ -91,7 +97,7 @@ const SignUp = () => {
 
             const method = isEdit ? 'PUT' : 'POST';
             const body = isEdit
-                ? _.pick(values, ['firstName', 'lastName', 'phone'])
+                ? _.pick(values, ['firstName', 'lastName', 'phone', 'zipCode'])
                 : _.omit(values, 'confirmPassword');
 
             const response = await fetch(url, {
@@ -133,8 +139,7 @@ const SignUp = () => {
         >
             <ScrollView contentContainerStyle={styles.container}>
                 <Text style={styles.title}>{isEdit ? 'Edit Profile' : 'Sign Up'}</Text>
-
-                {(['username', 'firstName', 'lastName', 'email', 'birthdate', 'phone'] as const).map((field) => (
+                {(['username', 'firstName', 'lastName', 'email', 'birthdate', 'phone', 'zipCode'] as const).map((field) => (
                     <Controller
                         key={field}
                         control={control}
@@ -144,18 +149,21 @@ const SignUp = () => {
                                 <Text style={styles.label}>{_.startCase(field)}</Text>
                                 <TextInput
                                     style={isEdit && ['username', 'email', 'birthdate'].includes(field) ? styles.inputDisabled : styles.input}
-                                    placeholder={field === 'phone' ? '###-###-####' : _.startCase(field)}
+                                    placeholder={field === 'phone' ? '###-###-####' : field === 'zipCode' ? '#####' : _.startCase(field)}
                                     autoCapitalize="none"
-                                    keyboardType={field === 'email' ? 'email-address' : field === 'phone' ? 'phone-pad' : 'default'}
+                                    keyboardType={field === 'email'
+                                        ? 'email-address' : field === 'phone'
+                                            ? 'phone-pad' : field === 'zipCode'
+                                                ? 'number-pad' : 'default'}
                                     editable={!(isEdit && (field === 'username' || field === 'email' || field === 'birthdate'))}
                                     value={value}
                                     onChangeText={field === 'phone' ? (v) => onChange(formatPhone(v)) : onChange}
+                                    maxLength={field === 'phone' ? 12 : field === 'zipCode' ? 5 : undefined}
                                 />
                             </View>
                         )}
                     />
                 ))}
-
                 {!isEdit && (['password', 'confirmPassword'] as const).map((field) => (
                     <Controller
                         key={field}
@@ -175,7 +183,6 @@ const SignUp = () => {
                         )}
                     />
                 ))}
-
                 <TouchableOpacity
                     style={styles.button}
                     onPress={handleSubmit(onSubmit)}
@@ -183,13 +190,11 @@ const SignUp = () => {
                 >
                     <Text style={styles.buttonText}>{loading ? 'Submitting...' : isEdit ? 'Save' : 'Submit'}</Text>
                 </TouchableOpacity>
-
                 {!isEdit && (
                     <TouchableOpacity onPress={() => router.push('/login')}>
                         <Text style={styles.link}>Already have an account? Log in here</Text>
                     </TouchableOpacity>
                 )}
-
                 <Toast />
             </ScrollView>
         </KeyboardAvoidingView>

@@ -37,6 +37,7 @@ const EventForm = () => {
 
     const isEditing = !!params.id;
     const editDateEnabled = params.editDateEnabled === 'true';
+    const businessInvitationId = params.businessInvitationId ? Number(params.businessInvitationId) : undefined;
 
     useEffect(() => {
         SecureStore.getItemAsync('token').then(setToken);
@@ -101,6 +102,7 @@ const EventForm = () => {
             hostId: user?.id,
             cost: Number(values.cost),
             repetition: values.repetition,
+            ...(businessInvitationId ? {businessInvitationId} : {})
         };
     };
 
@@ -155,6 +157,9 @@ const EventForm = () => {
             } else {
                 await queryClient.invalidateQueries({ queryKey: [`groupId-${groupId}`] });
                 await queryClient.invalidateQueries({ queryKey: ['events'] });
+            }
+            if (businessInvitationId) {
+                await queryClient.invalidateQueries({ queryKey: ['activeInvitations'] });
             }
             router.replace({
                 pathname: isEditing ? `/event/${params.id}` : `/event/${data.response.id}`,
