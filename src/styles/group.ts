@@ -106,4 +106,5 @@ export const styles = StyleSheet.create({
     bubbleRed: {backgroundColor: '#ef4444'},
     bubbleText: {color: '#fff', fontSize: 11, fontWeight: '700'},
     outlineButtonRow: {flexDirection: 'row', alignItems: 'center', gap: 6},
+    switch: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginVertical: 12}
 });

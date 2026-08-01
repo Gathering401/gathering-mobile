@@ -4,7 +4,7 @@ import * as SecureStore from 'expo-secure-store';
 import {useMutation, useQuery, useQueryClient, UseQueryResult} from '@tanstack/react-query';
 import {
     View, Text, TouchableOpacity, ScrollView,
-    ActivityIndicator, TextInput, Modal, Alert
+    ActivityIndicator, TextInput, Modal, Alert, Switch
 } from 'react-native';
 import {Ionicons} from '@expo/vector-icons';
 import {GatheringGroup} from '../../constants/GatheringGroup';
@@ -47,7 +47,10 @@ const GroupDisplay = () => {
     const authHeader = useAuthHeader();
 
     useEffect(() => {
-        SecureStore.getItemAsync('user').then(u => u && setUser(JSON.parse(u)));
+        SecureStore.getItemAsync('user').then(u => {
+            console.log('user', u);
+            return u && setUser(JSON.parse(u))
+        });
     }, []);
 
     useEffect(() => {
@@ -55,7 +58,7 @@ const GroupDisplay = () => {
         return () => clearTimeout(timer);
     }, [searchInvite]);
 
-    const {isLoading, data, error, refetch}: UseQueryResult = useQuery<{ group: GatheringGroup, currentRole: Role }>({
+    const {isLoading, data, error, refetch}: UseQueryResult = useQuery<{ group: GatheringGroup, currentRole: Role, allowNotifications: boolean }>({
         queryKey: [`groupId-${groupId}`],
         enabled: !!authHeader.Authorization,
         queryFn: async () => {
@@ -65,13 +68,14 @@ const GroupDisplay = () => {
             });
             const data = await response.json();
             if (data.success) {
-                return {group: data.response, currentRole: data.currentRole};
+                return {group: data.response, currentRole: data.currentRole, allowNotifications: data.allowNotifications};
             }
             throw new Error(data.error);
         }
     });
     const group = data?.group;
     const currentRole = data?.currentRole;
+    const allowNotifications = data?.allowNotifications;
 
     const {mutate: removeMember} = useMutation({
         mutationFn: async (userId: number) => {
@@ -132,6 +136,17 @@ const GroupDisplay = () => {
             );
             if (response.ok) await refetch();
         }
+    });
+
+    const {mutate: updateNotificationPreference, isPending: updatingNotifications} = useMutation({
+        mutationFn: async (enabled: boolean) => {
+            const response = await fetch(
+                `${process.env.EXPO_PUBLIC_API_URL}/group/notification-preference?id=${groupId}&enabled=${enabled}`,
+                {method: 'PUT', headers: authHeader}
+            );
+            if (!response.ok) throw new Error('Failed to update notification preference');
+        },
+        onSuccess: () => refetch()
     });
 
     const {updateRsvp} = useRsvpUpdate(async () => {
@@ -300,6 +315,16 @@ const GroupDisplay = () => {
             <Text style={styles.owner}>
                 Owned by {activeMembers.find(m => m.role === Role.owner)?.username}
             </Text>
+            {user?.expoPushToken && (
+                <View style={styles.switch}>
+                    <Text style={styles.description}>Receive reminders for this group?</Text>
+                    <Switch
+                        value={!!allowNotifications}
+                        onValueChange={(value) => updateNotificationPreference(value)}
+                        disabled={updatingNotifications}
+                    />
+                </View>
+            )}
             {isAdmin && (
                 <View style={styles.actionRow}>
                     <TouchableOpacity
