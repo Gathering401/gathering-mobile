@@ -3,13 +3,15 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useForm, Controller } from 'react-hook-form';
 import Toast from 'react-native-toast-message';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import _ from 'lodash';
 import dayjs from 'dayjs';
 import {
-    View, Text, TextInput, TouchableOpacity,
+    View, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, Keyboard,
     KeyboardAvoidingView, Platform, ScrollView
 } from 'react-native';
 import {styles} from "../styles/signup";
+import {colors} from "../styles/colors";
 import {usePushToken} from "../hooks/usePushToken";
 
 interface SignUpValues {
@@ -17,7 +19,7 @@ interface SignUpValues {
     email: string;
     firstName: string;
     lastName: string;
-    birthdate: string;
+    birthdate?: Date;
     phone: string;
     zipCode: string;
     password: string;
@@ -30,6 +32,11 @@ const nameRegex = /^[a-z ,.'-]{2,64}$/i;
 const phoneRegex = /^\d{3}-\d{3}-\d{4}$/;
 const zipCodeRegex = /^\d{5}$/;
 
+const nameFields = ['username', 'firstName', 'lastName'];
+const capitalizeFirstOnly = ['firstName', 'lastName'];
+
+const datePickerFallback = dayjs().subtract(13, 'years').toDate();
+
 const formatPhone = (value: string) => {
     const digits = value.replace(/\D/g, '').slice(0, 10);
     if (digits.length <= 3) return digits;
@@ -41,6 +48,7 @@ const SignUp = () => {
     const router = useRouter();
     const params = useLocalSearchParams();
     const [loading, setLoading] = useState(false);
+    const [showDatePicker, setShowDatePicker] = useState(false);
     const { registerPushToken } = usePushToken();
 
     const isEdit = params.isEdit === 'true';
@@ -49,13 +57,13 @@ const SignUp = () => {
         SecureStore.getItemAsync('token').then(setToken);
     }, []);
 
-    const { control, handleSubmit, getValues } = useForm<SignUpValues>({
+    const { control, handleSubmit } = useForm<SignUpValues>({
         defaultValues: {
             username: (params.username as string) ?? '',
             email: (params.email as string) ?? '',
             firstName: (params.firstName as string) ?? '',
             lastName: (params.lastName as string) ?? '',
-            birthdate: params.birthdate ? dayjs(params.birthdate as string).format('MM/DD/YYYY') : '',
+            birthdate: params.birthdate ? dayjs(params.birthdate as string).toDate() : undefined,
             phone: (params.phone as string) ?? '',
             zipCode: (params.zipCode as string) ?? '',
             password: '',
@@ -73,7 +81,10 @@ const SignUp = () => {
         if (!nameRegex.test(values.lastName)) {
             return Toast.show({ type: 'error', text1: 'Last Name', text2: 'Invalid last name' });
         }
-        if (dayjs(values.birthdate).add(13, 'years').isAfter(dayjs())) {
+        if (!values.birthdate) {
+            return Toast.show({ type: 'error', text1: 'Birthdate', text2: 'Birthdate is required' });
+        }
+        if (dayjs().diff(dayjs(values.birthdate), 'years') < 13) {
             return Toast.show({ type: 'error', text1: 'Birthdate', text2: 'Must be older than 13 to sign up' });
         }
         if (!phoneRegex.test(values.phone)) {
@@ -132,71 +143,148 @@ const SignUp = () => {
         }
     };
 
+    const renderField = (field: keyof Omit<SignUpValues, 'birthdate'>, disabled = false) => (
+        <Controller
+            key={field}
+            control={control}
+            name={field}
+            render={({ field: { onChange, value } }) => (
+                <View>
+                    <Text style={styles.label}>{_.startCase(field)} <Text style={styles.required}>*</Text></Text>
+                    <TextInput
+                        style={disabled ? styles.inputDisabled : styles.input}
+                        placeholder={field === 'phone' ? '###-###-####' : field === 'zipCode' ? '#####' : _.startCase(field)}
+                        autoCapitalize={capitalizeFirstOnly.includes(field) ? 'words' : 'none'}
+                        autoCorrect={!nameFields.includes(field)}
+                        keyboardType={field === 'email'
+                            ? 'email-address' : field === 'phone'
+                                ? 'phone-pad' : field === 'zipCode'
+                                    ? 'number-pad' : 'default'}
+                        editable={!disabled}
+                        value={value}
+                        onChangeText={field === 'phone' ? (v) => onChange(formatPhone(v)) : onChange}
+                        maxLength={field === 'phone' ? 12 : field === 'zipCode' ? 5 : undefined}
+                    />
+                </View>
+            )}
+        />
+    );
+
     return (
         <KeyboardAvoidingView
             style={{ flex: 1 }}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-            <ScrollView contentContainerStyle={styles.container}>
-                <Text style={styles.title}>{isEdit ? 'Edit Profile' : 'Sign Up'}</Text>
-                {(['username', 'firstName', 'lastName', 'email', 'birthdate', 'phone', 'zipCode'] as const).map((field) => (
+            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+                    <Text style={styles.title}>{isEdit ? 'Edit Profile' : 'Sign Up'}</Text>
+                    <Text style={styles.legend}><Text style={styles.required}>*</Text> Required</Text>
+
+                    <View style={styles.fieldContainer}>
+                        {renderField('username', isEdit)}
+                    </View>
+                    <View style={styles.row}>
+                        <View style={styles.halfField}>{renderField('firstName')}</View>
+                        <View style={styles.halfField}>{renderField('lastName')}</View>
+                    </View>
+                    <View style={styles.fieldContainer}>
+                        {renderField('email', isEdit)}
+                    </View>
                     <Controller
-                        key={field}
                         control={control}
-                        name={field as any}
+                        name="birthdate"
                         render={({ field: { onChange, value } }) => (
                             <View style={styles.fieldContainer}>
-                                <Text style={styles.label}>{_.startCase(field)}</Text>
-                                <TextInput
-                                    style={isEdit && ['username', 'email', 'birthdate'].includes(field) ? styles.inputDisabled : styles.input}
-                                    placeholder={field === 'phone' ? '###-###-####' : field === 'zipCode' ? '#####' : _.startCase(field)}
-                                    autoCapitalize="none"
-                                    keyboardType={field === 'email'
-                                        ? 'email-address' : field === 'phone'
-                                            ? 'phone-pad' : field === 'zipCode'
-                                                ? 'number-pad' : 'default'}
-                                    editable={!(isEdit && (field === 'username' || field === 'email' || field === 'birthdate'))}
-                                    value={value}
-                                    onChangeText={field === 'phone' ? (v) => onChange(formatPhone(v)) : onChange}
-                                    maxLength={field === 'phone' ? 12 : field === 'zipCode' ? 5 : undefined}
-                                />
+                                <Text style={styles.label}>Birthdate <Text style={styles.required}>*</Text></Text>
+                                <TouchableOpacity
+                                    style={isEdit ? styles.inputDisabled : styles.input}
+                                    onPress={() => !isEdit && setShowDatePicker(true)}
+                                    disabled={isEdit}
+                                >
+                                    <Text style={{ fontSize: 16, color: value ? (isEdit ? colors.terracotta.secondary : colors.terracotta.text) : colors.sage.secondary }}>
+                                        {value ? dayjs(value).format('MM/DD/YYYY') : 'Select your birthdate'}
+                                    </Text>
+                                </TouchableOpacity>
+                                {showDatePicker && (
+                                    <>
+                                        <DateTimePicker
+                                            value={value ?? datePickerFallback}
+                                            mode="date"
+                                            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                                            maximumDate={dayjs().subtract(13, 'years').toDate()}
+                                            onChange={(_, date) => {
+                                                setShowDatePicker(Platform.OS === 'ios');
+                                                if (date) onChange(date);
+                                            }}
+                                        />
+                                        {Platform.OS === 'ios' && (
+                                            <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                                                <Text style={styles.link}>Done</Text>
+                                            </TouchableOpacity>
+                                        )}
+                                    </>
+                                )}
                             </View>
                         )}
                     />
-                ))}
-                {!isEdit && (['password', 'confirmPassword'] as const).map((field) => (
-                    <Controller
-                        key={field}
-                        control={control}
-                        name={field as any}
-                        render={({ field: { onChange, value } }) => (
-                            <View style={styles.fieldContainer}>
-                                <Text style={styles.label}>{_.startCase(field)}</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder={_.startCase(field)}
-                                    secureTextEntry
-                                    value={value}
-                                    onChangeText={onChange}
-                                />
-                            </View>
-                        )}
-                    />
-                ))}
-                <TouchableOpacity
-                    style={styles.button}
-                    onPress={handleSubmit(onSubmit)}
-                    disabled={loading}
-                >
-                    <Text style={styles.buttonText}>{loading ? 'Submitting...' : isEdit ? 'Save' : 'Submit'}</Text>
-                </TouchableOpacity>
-                {!isEdit && (
-                    <TouchableOpacity onPress={() => router.push('/login')}>
-                        <Text style={styles.link}>Already have an account? Log in here</Text>
+
+                    <View style={styles.row}>
+                        <View style={styles.halfField}>{renderField('phone')}</View>
+                        <View style={styles.halfField}>{renderField('zipCode')}</View>
+                    </View>
+
+                    {!isEdit && (
+                        <>
+                            <Controller
+                                control={control}
+                                name="password"
+                                render={({ field: { onChange, value } }) => (
+                                    <View style={styles.fieldContainer}>
+                                        <Text style={styles.label}>Password <Text style={styles.required}>*</Text></Text>
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="Password"
+                                            secureTextEntry
+                                            value={value}
+                                            onChangeText={onChange}
+                                        />
+                                    </View>
+                                )}
+                            />
+                            <Controller
+                                control={control}
+                                name="confirmPassword"
+                                render={({ field: { onChange, value } }) => (
+                                    <View style={styles.fieldContainer}>
+                                        <Text style={styles.label}>Confirm Password <Text style={styles.required}>*</Text></Text>
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="Confirm Password"
+                                            secureTextEntry
+                                            value={value}
+                                            onChangeText={onChange}
+                                        />
+                                    </View>
+                                )}
+                            />
+                        </>
+                    )}
+
+                    <TouchableOpacity
+                        style={styles.button}
+                        onPress={handleSubmit(onSubmit)}
+                        disabled={loading}
+                    >
+                        <Text style={styles.buttonText}>{loading ? 'Submitting...' : isEdit ? 'Save' : 'Submit'}</Text>
                     </TouchableOpacity>
-                )}
-                <Toast />
-            </ScrollView>
+                    {!isEdit && (
+                        <TouchableOpacity onPress={() => router.push('/login')}>
+                            <Text style={styles.link}>Already have an account? Log in here</Text>
+                        </TouchableOpacity>
+                    )}
+                    <Toast />
+                </ScrollView>
+            </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
     );
 };

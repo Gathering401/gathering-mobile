@@ -5,7 +5,7 @@ import {useForm, Controller} from 'react-hook-form';
 import Toast from 'react-native-toast-message';
 import {
     View, Text, TextInput, TouchableOpacity,
-    KeyboardAvoidingView, Platform
+    KeyboardAvoidingView, TouchableWithoutFeedback, Keyboard, Platform
 } from 'react-native';
 import {styles} from "../styles/login";
 import {usePushToken} from "../hooks/usePushToken";
@@ -57,52 +57,56 @@ const LogIn = () => {
             style={styles.container}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-            <Text style={styles.title}>Log In</Text>
-            <Controller
-                control={control}
-                name="username"
-                render={({field: {onChange, value}}) => (
-                    <View style={styles.fieldContainer}>
-                        <Text style={styles.label}>Username</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Username"
-                            autoCapitalize="none"
-                            value={value}
-                            onChangeText={onChange}
-                        />
-                    </View>
-                )}
-            />
-            <Controller
-                control={control}
-                name="password"
-                render={({field: {onChange, value}}) => (
-                    <View style={styles.fieldContainer}>
-                        <Text style={styles.label}>Password</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Password"
-                            secureTextEntry
-                            value={value}
-                            onChangeText={onChange}
-                        />
-                    </View>
-                )}
-            />
-            <TouchableOpacity
-                style={styles.button}
-                onPress={handleSubmit(onSubmit)}
-                disabled={loading}
-            >
-                <Text style={styles.buttonText}>{loading ? 'Logging in...' : 'Submit'}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => router.push('/forgot-password')}>
-                <Text style={styles.link}>Forgot your password?</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => router.push('/signup')}>
-                <Text style={styles.link}>Don't have an account yet? Sign up here</Text>
-            </TouchableOpacity>
+            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                <View style={styles.inner}>
+                    <Text style={styles.title}>Log In</Text>
+                    <Controller
+                        control={control}
+                        name="username"
+                        render={({field: {onChange, value}}) => (
+                            <View style={styles.fieldContainer}>
+                                <Text style={styles.label}>Username</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Username"
+                                    autoCapitalize="none"
+                                    value={value}
+                                    onChangeText={onChange}
+                                />
+                            </View>
+                        )}
+                    />
+                    <Controller
+                        control={control}
+                        name="password"
+                        render={({field: {onChange, value}}) => (
+                            <View style={styles.fieldContainer}>
+                                <Text style={styles.label}>Password</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Password"
+                                    secureTextEntry
+                                    value={value}
+                                    onChangeText={onChange}
+                                />
+                            </View>
+                        )}
+                    />
+                    <TouchableOpacity
+                        style={styles.button}
+                        onPress={handleSubmit(onSubmit)}
+                        disabled={loading}
+                    >
+                        <Text style={styles.buttonText}>{loading ? 'Logging in...' : 'Submit'}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => router.push('/forgot-password')}>
+                        <Text style={styles.link}>Forgot your password?</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => router.push('/signup')}>
+                        <Text style={styles.link}>Don't have an account yet? Sign up here</Text>
+                    </TouchableOpacity>
+                </View>
+            </TouchableWithoutFeedback>
             <Toast/>
         </KeyboardAvoidingView>
     );
