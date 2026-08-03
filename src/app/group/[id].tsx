@@ -47,10 +47,7 @@ const GroupDisplay = () => {
     const authHeader = useAuthHeader();
 
     useEffect(() => {
-        SecureStore.getItemAsync('user').then(u => {
-            console.log('user', u);
-            return u && setUser(JSON.parse(u))
-        });
+        SecureStore.getItemAsync('user').then(u => u && setUser(JSON.parse(u)));
     }, []);
 
     useEffect(() => {
