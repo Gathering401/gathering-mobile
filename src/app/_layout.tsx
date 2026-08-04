@@ -129,6 +129,17 @@ export default function RootLayout() {
                 />
                 <Stack.Screen name="signup" options={{ headerShown: false }} />
                 <Stack.Screen name="login" options={{ headerShown: false }} />
+                <Stack.Screen name="forgot-password" options={{ headerShown: false }} />
+                <Stack.Screen name="reset-password" options={{ headerShown: false }} />
+                <Stack.Screen
+                    name="change-password"
+                    options={{
+                        headerTitle: '',
+                        headerBackButtonDisplayMode: 'minimal',
+                        headerTransparent: true,
+                        headerShadowVisible: false,
+                    }}
+                />
             </Stack>
         </QueryClientProvider>
     );

@@ -4,7 +4,7 @@ import {useForm, Controller} from 'react-hook-form';
 import Toast from 'react-native-toast-message';
 import {
     View, Text, TextInput, TouchableOpacity,
-    KeyboardAvoidingView, Platform
+    KeyboardAvoidingView, TouchableWithoutFeedback, Keyboard, Platform
 } from 'react-native';
 import {styles} from '../styles/login';
 
@@ -55,34 +55,38 @@ const ForgotPassword = () => {
             style={styles.container}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-            <Text style={styles.title}>Forgot Password</Text>
-            <Controller
-                control={control}
-                name="email"
-                render={({field: {onChange, value}}) => (
-                    <View style={styles.fieldContainer}>
-                        <Text style={styles.label}>Email</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Email"
-                            autoCapitalize="none"
-                            keyboardType="email-address"
-                            value={value}
-                            onChangeText={onChange}
-                        />
-                    </View>
-                )}
-            />
-            <TouchableOpacity
-                style={styles.button}
-                onPress={handleSubmit(onSubmit)}
-                disabled={loading}
-            >
-                <Text style={styles.buttonText}>{loading ? 'Submitting...' : 'Submit'}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => router.replace('/login')}>
-                <Text style={styles.link}>Back to log in</Text>
-            </TouchableOpacity>
+            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                <View style={styles.inner}>
+                    <Text style={styles.title}>Forgot Password</Text>
+                    <Controller
+                        control={control}
+                        name="email"
+                        render={({field: {onChange, value}}) => (
+                            <View style={styles.fieldContainer}>
+                                <Text style={styles.label}>Email</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="gathering_user@example.com"
+                                    autoCapitalize="none"
+                                    keyboardType="email-address"
+                                    value={value}
+                                    onChangeText={onChange}
+                                />
+                            </View>
+                        )}
+                    />
+                    <TouchableOpacity
+                        style={styles.button}
+                        onPress={handleSubmit(onSubmit)}
+                        disabled={loading}
+                    >
+                        <Text style={styles.buttonText}>{loading ? 'Submitting...' : 'Submit'}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => router.replace('/login')}>
+                        <Text style={styles.link}>Back to log in</Text>
+                    </TouchableOpacity>
+                </View>
+            </TouchableWithoutFeedback>
             <Toast/>
         </KeyboardAvoidingView>
     );

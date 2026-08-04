@@ -4,7 +4,7 @@ import {useForm, Controller} from 'react-hook-form';
 import Toast from 'react-native-toast-message';
 import {
     View, Text, TextInput, TouchableOpacity,
-    KeyboardAvoidingView, Platform
+    KeyboardAvoidingView, TouchableWithoutFeedback, Keyboard, Platform
 } from 'react-native';
 import {styles} from '../styles/login';
 
@@ -13,10 +13,12 @@ interface ResetPasswordValues {
     confirmPassword: string;
 }
 
+const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+
 const ResetPassword = () => {
     const router = useRouter();
     const {token} = useLocalSearchParams<{token: string}>();
-    const {control, handleSubmit, watch} = useForm<ResetPasswordValues>({
+    const {control, handleSubmit} = useForm<ResetPasswordValues>({
         defaultValues: {
             newPassword: '',
             confirmPassword: ''
@@ -30,9 +32,11 @@ const ResetPassword = () => {
     }, [token]);
 
     const onSubmit = async (values: ResetPasswordValues) => {
+        if (!passwordRegex.test(values.newPassword)) {
+            return Toast.show({type: 'error', text1: 'Password', text2: 'Minimum 8 characters, 1 number, 1 uppercase, 1 lowercase, 1 symbol'});
+        }
         if (values.newPassword !== values.confirmPassword) {
-            Toast.show({type: 'error', text1: 'Passwords do not match'});
-            return;
+            return Toast.show({type: 'error', text1: 'Confirm Password', text2: 'Passwords do not match'});
         }
 
         try {
@@ -60,45 +64,52 @@ const ResetPassword = () => {
             style={styles.container}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-            <Text style={styles.title}>Reset Password</Text>
-            <Controller
-                control={control}
-                name="newPassword"
-                render={({field: {onChange, value}}) => (
-                    <View style={styles.fieldContainer}>
-                        <Text style={styles.label}>New Password</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="New Password"
-                            secureTextEntry
-                            value={value}
-                            onChangeText={onChange}
-                        />
-                    </View>
-                )}
-            />
-            <Controller
-                control={control}
-                name="confirmPassword"
-                render={({field: {onChange, value}}) => (
-                    <View style={styles.fieldContainer}>
-                        <Text style={styles.label}>Confirm Password</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Confirm Password"
-                            secureTextEntry
-                            value={value}
-                            onChangeText={onChange}
-                        />
-                    </View>
-                )}
-            />
-            <TouchableOpacity
-                style={styles.button}
-                onPress={handleSubmit(onSubmit)}
-            >
-                <Text style={styles.buttonText}>Reset Password</Text>
-            </TouchableOpacity>
+            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                <View style={styles.inner}>
+                    <Text style={styles.title}>Reset Password</Text>
+                    <Controller
+                        control={control}
+                        name="newPassword"
+                        render={({field: {onChange, value}}) => (
+                            <View style={styles.fieldContainer}>
+                                <Text style={styles.label}>New Password</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="New Password"
+                                    secureTextEntry
+                                    value={value}
+                                    onChangeText={onChange}
+                                />
+                            </View>
+                        )}
+                    />
+                    <Controller
+                        control={control}
+                        name="confirmPassword"
+                        render={({field: {onChange, value}}) => (
+                            <View style={styles.fieldContainer}>
+                                <Text style={styles.label}>Confirm Password</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Confirm Password"
+                                    secureTextEntry
+                                    value={value}
+                                    onChangeText={onChange}
+                                />
+                            </View>
+                        )}
+                    />
+                    <TouchableOpacity
+                        style={styles.button}
+                        onPress={handleSubmit(onSubmit)}
+                    >
+                        <Text style={styles.buttonText}>Reset Password</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => router.replace('/login')}>
+                        <Text style={styles.link}>Back to log in</Text>
+                    </TouchableOpacity>
+                </View>
+            </TouchableWithoutFeedback>
             <Toast/>
         </KeyboardAvoidingView>
     );
