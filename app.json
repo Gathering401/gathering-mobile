@@ -17,7 +17,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.ocdammo3.gatheringmobile",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIDesignRequiresCompatibility": true
       }
     },
     "android": {

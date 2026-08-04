@@ -2,7 +2,7 @@ import {useState, useEffect} from 'react';
 import {useLocalSearchParams, useRouter} from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
-import {Calendar} from 'react-native-calendars';
+import {Calendar, DateData} from 'react-native-calendars';
 import {
     Text,
     TouchableOpacity,
@@ -11,18 +11,21 @@ import {
     View,
     Modal,
     Alert,
-    TouchableWithoutFeedback
+    TouchableWithoutFeedback,
+    Dimensions
 } from 'react-native';
 import dayjs from 'dayjs';
-import {styles} from "../../styles";
+import {styles, dotPending, dotResponded} from "../../styles";
+import {colors} from "../../styles/colors";
 import {Rsvp, getRsvpLabelFor, getRsvpsForDropdown} from "../../constants/enums/Rsvp";
-import {Repetition} from "../../constants/enums/Repetition";
 import {useAuthHeader} from '../../hooks/useAuthHeader';
 import {useRsvpUpdate} from '../../hooks/useRsvpUpdate';
 import {CalendarEvent} from "../../constants/CalendarEvent";
-import {ActiveInvitation} from "../../constants/ActiveInvitation";
+import {BusinessInvitation} from "../../constants/BusinessInvitation";
+import {PendingInvitation} from "../../constants/PendingInvitation";
 
 const APP_OPEN_PROMPT_KEY = 'lastInvitationPromptShown';
+const CARD_WIDTH = Dimensions.get('window').width * 0.4;
 
 const rsvpColor = (rsvp: Rsvp): string => {
     switch (rsvp) {
@@ -52,17 +55,20 @@ const Main = () => {
     const queryClient = useQueryClient();
     const [selectedDate, setSelectedDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
     const [rsvpPickerEvent, setRsvpPickerEvent] = useState<CalendarEvent | null>(null);
-    const [selectedInvitation, setSelectedInvitation] = useState<ActiveInvitation | null>(null);
+    const [selectedInvitation, setSelectedInvitation] = useState<BusinessInvitation | null>(null);
 
     const params = useLocalSearchParams<{invitationId?: string}>();
 
     const authHeader = useAuthHeader();
 
+    const selectedYear = dayjs(selectedDate).year();
+    const selectedMonth = dayjs(selectedDate).month() + 1;
+
     const {isLoading, data: events = [], refetch} = useQuery<CalendarEvent[]>({
-        queryKey: ['events'],
+        queryKey: ['events', selectedYear, selectedMonth],
         enabled: !!authHeader.Authorization,
         queryFn: async () => {
-            const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/event/all`, {
+            const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/event/all?year=${selectedYear}&month=${selectedMonth}`, {
                 method: 'GET',
                 headers: authHeader
             });
@@ -74,8 +80,8 @@ const Main = () => {
         }
     });
 
-    const {isLoading: invitationsLoading, data: invitations = []} = useQuery<ActiveInvitation[]>({
-        queryKey: ['activeInvitations'],
+    const {isLoading: businessInvitationsLoading, data: businessInvitations = []} = useQuery<BusinessInvitation[]>({
+        queryKey: ['businessInvitations'],
         enabled: !!authHeader.Authorization,
         queryFn: async () => {
             const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/event/invitations`, {
@@ -90,20 +96,36 @@ const Main = () => {
         }
     });
 
+    const {isLoading: pendingInvitationsLoading, data: pendingInvitations = []} = useQuery<PendingInvitation[]>({
+        queryKey: ['pendingInvitations'],
+        enabled: !!authHeader.Authorization,
+        queryFn: async () => {
+            const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/event/pending-invitations`, {
+                method: 'GET',
+                headers: authHeader
+            });
+            const data = await response.json();
+            if (data.success) {
+                return data.response;
+            }
+            throw new Error(data.error);
+        }
+    });
+
     useEffect(() => {
-        if (invitationsLoading || !invitations.length) {
+        if (businessInvitationsLoading || !businessInvitations.length) {
             return;
         }
 
         if (params.invitationId) {
-            const tapped = invitations.find(i => String(i.id) === params.invitationId);
+            const tapped = businessInvitations.find(i => String(i.id) === params.invitationId);
             if (tapped) {
                 setSelectedInvitation(tapped);
             }
             return;
         }
 
-        const pushSlotInvitation = invitations.find(i => i.slotPosition === 1);
+        const pushSlotInvitation = businessInvitations.find(i => i.slotPosition === 1);
         if (!pushSlotInvitation) {
             return;
         }
@@ -118,7 +140,7 @@ const Main = () => {
             setSelectedInvitation(pushSlotInvitation);
             SecureStore.setItemAsync(APP_OPEN_PROMPT_KEY, expectedKey);
         });
-    }, [invitationsLoading, invitations, params.invitationId]);
+    }, [businessInvitationsLoading, businessInvitations, params.invitationId]);
 
     const declineMutation = useMutation({
         mutationFn: async (businessInvitationId: number) => {
@@ -133,7 +155,7 @@ const Main = () => {
             }
         },
         onSuccess: async () => {
-            await queryClient.invalidateQueries({queryKey: ['activeInvitations']});
+            await queryClient.invalidateQueries({queryKey: ['businessInvitations']});
             setSelectedInvitation(null);
         }
     });
@@ -142,6 +164,7 @@ const Main = () => {
         if (rsvpPickerEvent) {
             await queryClient.invalidateQueries({queryKey: [`eventId-${rsvpPickerEvent.id}`]});
         }
+        await queryClient.invalidateQueries({queryKey: ['pendingInvitations']});
         await refetch();
         setRsvpPickerEvent(null);
     });
@@ -162,21 +185,21 @@ const Main = () => {
 
         const dots = [];
         if (hasPending) {
-            dots.push({key: 'pending', color: '#ef4444'});
+            dots.push({key: 'pending', color: dotPending});
         }
         if (hasResponded) {
-            dots.push({key: 'responded', color: '#228be6'});
+            dots.push({key: 'responded', color: dotResponded});
         }
 
-        acc[key] = {dots, selected: key === selectedDate, selectedColor: '#228be6'};
+        acc[key] = {dots, selected: key === selectedDate, selectedColor: colors.terracotta.primary};
         return acc;
     }, {});
 
     if (!markedDates[selectedDate]) {
-        markedDates[selectedDate] = {selected: true, selectedColor: '#228be6', dots: []};
+        markedDates[selectedDate] = {selected: true, selectedColor: colors.terracotta.primary, dots: []};
     } else {
         markedDates[selectedDate].selected = true;
-        markedDates[selectedDate].selectedColor = '#228be6';
+        markedDates[selectedDate].selectedColor = colors.terracotta.primary;
     }
 
     const selectedEvents = (eventsByDate[selectedDate] ?? [])
@@ -185,6 +208,10 @@ const Main = () => {
 
     const formattedSelected = dayjs(selectedDate).format('MMMM D, YYYY');
     const rsvpOptions = getRsvpsForDropdown();
+
+    const onMonthChange = (month: DateData) => {
+        setSelectedDate(dayjs(`${month.year}-${month.month}-01`).format('YYYY-MM-DD'));
+    };
 
     return (
         <ScrollView contentContainerStyle={styles.container}>
@@ -195,70 +222,81 @@ const Main = () => {
                     <Calendar
                         current={selectedDate}
                         onDayPress={(day) => setSelectedDate(day.dateString)}
+                        onMonthChange={onMonthChange}
                         markedDates={markedDates}
                         markingType="multi-dot"
                         theme={{
-                            todayTextColor: '#228be6',
-                            selectedDayBackgroundColor: '#228be6',
-                            dotColor: '#228be6',
-                            arrowColor: '#228be6',
+                            todayTextColor: colors.terracotta.primary,
+                            selectedDayBackgroundColor: colors.terracotta.primary,
+                            dotColor: colors.terracotta.primary,
+                            arrowColor: colors.terracotta.primary,
                         }}
                     />
                     <Text style={styles.dateTitle}>{formattedSelected}</Text>
                     {selectedEvents.length === 0 ? (
                         <Text style={styles.emptyText}>No events on {formattedSelected}</Text>
                     ) : (
-                        selectedEvents.map((event) => (
-                            <TouchableOpacity
-                                key={event.id}
-                                style={styles.card}
-                                onPress={() => router.push({
-                                    pathname: `/event/${event.id}`,
-                                    params: {groupId: String(event.groupId)}
-                                })}
-                            >
-                                <Text style={styles.cardTitle}>{event.name}</Text>
-                                <Text style={styles.cardGroup}>{event.groupName}</Text>
-                                <View style={styles.cardFooter}>
-                                    <Text style={styles.cardTime}>{dayjs(event.date).format('h:mm A')}</Text>
-                                    <TouchableOpacity
-                                        style={[styles.rsvpPill, {backgroundColor: rsvpColor(event.myRsvp) + '22'}]}
-                                        onPress={(e) => {
-                                            e.stopPropagation();
-                                            setRsvpPickerEvent(event);
-                                        }}
-                                    >
-                                        <Text style={[styles.rsvpPillText, {color: rsvpColor(event.myRsvp)}]}>
-                                            {getRsvpLabelFor(event.myRsvp)} ▾
-                                        </Text>
-                                    </TouchableOpacity>
-                                </View>
-                            </TouchableOpacity>
-                        ))
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={styles.contentContainer}
+                        >
+                            {selectedEvents.map((event) => (
+                                <TouchableOpacity
+                                    key={event.id}
+                                    style={[styles.card, {width: CARD_WIDTH}]}
+                                    onPress={() => router.push({
+                                        pathname: `/event/${event.id}`,
+                                        params: {groupId: String(event.groupId)}
+                                    })}
+                                >
+                                    <Text style={styles.cardTitle}>{event.name}</Text>
+                                    <Text style={styles.cardGroup}>{event.groupName}</Text>
+                                    <View style={styles.cardFooter}>
+                                        <Text style={styles.cardTime}>{dayjs(event.date).format('h:mm A')}</Text>
+                                        <TouchableOpacity
+                                            style={[styles.rsvpPill, {backgroundColor: rsvpColor(event.myRsvp) + '22'}]}
+                                            onPress={(e) => {
+                                                e.stopPropagation();
+                                                setRsvpPickerEvent(event);
+                                            }}
+                                        >
+                                            <Text style={[styles.rsvpPillText, {color: rsvpColor(event.myRsvp)}]}>
+                                                {getRsvpLabelFor(event.myRsvp)} ▾
+                                            </Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
                     )}
                     <Modal visible={!!rsvpPickerEvent} transparent animationType="slide">
-                        <View style={styles.modalOverlay}>
-                            <View style={styles.modalContent}>
-                                <Text style={styles.modalTitle}>Update RSVP</Text>
-                                {rsvpOptions.map((opt: { label: string; value: string }) => (
-                                    <TouchableOpacity
-                                        key={opt.value}
-                                        style={styles.modalOption}
-                                        onPress={() => updateRsvp(
-                                            rsvpPickerEvent!.groupId,
-                                            rsvpPickerEvent!.id,
-                                            rsvpPickerEvent!.repetition,
-                                            Number(opt.value) as Rsvp
-                                        )}
-                                    >
-                                        <Text style={styles.modalOptionText}>{opt.label}</Text>
-                                    </TouchableOpacity>
-                                ))}
-                                <TouchableOpacity onPress={() => setRsvpPickerEvent(null)}>
-                                    <Text style={styles.modalCancel}>Cancel</Text>
-                                </TouchableOpacity>
+                        <TouchableWithoutFeedback onPress={() => setRsvpPickerEvent(null)}>
+                            <View style={styles.modalOverlay}>
+                                <TouchableWithoutFeedback onPress={() => {}}>
+                                    <View style={styles.modalContent}>
+                                        <Text style={styles.modalTitle}>Update RSVP</Text>
+                                        {rsvpOptions.map((opt: { label: string; value: string }) => (
+                                            <TouchableOpacity
+                                                key={opt.value}
+                                                style={styles.modalOption}
+                                                onPress={() => updateRsvp(
+                                                    rsvpPickerEvent!.groupId,
+                                                    rsvpPickerEvent!.id,
+                                                    rsvpPickerEvent!.repetition,
+                                                    Number(opt.value) as Rsvp
+                                                )}
+                                            >
+                                                <Text style={styles.modalOptionText}>{opt.label}</Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                        <TouchableOpacity onPress={() => setRsvpPickerEvent(null)}>
+                                            <Text style={styles.modalCancel}>Close</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </TouchableWithoutFeedback>
                             </View>
-                        </View>
+                        </TouchableWithoutFeedback>
                     </Modal>
                     <Modal visible={!!selectedInvitation} transparent animationType="slide">
                         <TouchableWithoutFeedback onPress={() => setSelectedInvitation(null)}>
@@ -324,29 +362,85 @@ const Main = () => {
                             </View>
                         </TouchableWithoutFeedback>
                     </Modal>
-                    <Text style={styles.dateTitle}>Recommended Events</Text>
-                    {invitationsLoading ? (
+                    <Text style={styles.dateTitle}>Pending Invitations</Text>
+                    {pendingInvitationsLoading ? (
                         <ActivityIndicator size="small" style={{marginTop: 12}}/>
-                    ) : invitations.length === 0 ? (
+                    ) : pendingInvitations.length === 0 ? (
+                        <Text style={styles.emptyText}>No pending invitations</Text>
+                    ) : (
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={styles.contentContainer}
+                        >
+                            {pendingInvitations.map((invitation) => (
+                                <TouchableOpacity
+                                    key={invitation.eventId}
+                                    style={[styles.card, {width: CARD_WIDTH}]}
+                                    onPress={() => router.push({
+                                        pathname: `/event/${invitation.eventId}`,
+                                        params: {groupId: String(invitation.groupId)}
+                                    })}
+                                >
+                                    <Text style={styles.cardTitle}>{invitation.eventName}</Text>
+                                    <Text style={styles.cardGroup}>{invitation.groupName}</Text>
+                                    <View style={styles.cardFooter}>
+                                        <Text style={styles.cardTime}>{dayjs(invitation.date).format('MMM D, h:mm A')}</Text>
+                                        <TouchableOpacity
+                                            style={[styles.rsvpPill, {backgroundColor: rsvpColor(invitation.rsvpStatus) + '22'}]}
+                                            onPress={(e) => {
+                                                e.stopPropagation();
+                                                setRsvpPickerEvent({
+                                                    id: invitation.eventId,
+                                                    name: invitation.eventName,
+                                                    description: invitation.description,
+                                                    date: invitation.date,
+                                                    groupId: invitation.groupId,
+                                                    groupName: invitation.groupName,
+                                                    myRsvp: invitation.rsvpStatus,
+                                                    repetition: invitation.repetition,
+                                                    seriesId: invitation.seriesId
+                                                });
+                                            }}
+                                        >
+                                            <Text style={[styles.rsvpPillText, {color: rsvpColor(invitation.rsvpStatus)}]}>
+                                                {getRsvpLabelFor(invitation.rsvpStatus)} ▾
+                                            </Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+                    )}
+                    <Text style={styles.dateTitle}>Recommended Events</Text>
+                    {businessInvitationsLoading ? (
+                        <ActivityIndicator size="small" style={{marginTop: 12}}/>
+                    ) : businessInvitations.length === 0 ? (
                         <Text style={styles.emptyText}>No invitations right now</Text>
                     ) : (
-                        invitations.map((invitation) => (
-                            <TouchableOpacity
-                                key={invitation.id}
-                                style={[styles.card, {borderLeftWidth: 4, borderLeftColor: '#12b886'}]}
-                                onPress={() => setSelectedInvitation(invitation)}
-                            >
-                                <Text style={styles.cardGroupScroll}>
-                                    {invitation.businessName}
-                                </Text>
-                                <Text style={styles.cardTitle}>{invitation.name}</Text>
-                                <View style={styles.cardFooter}>
-                                    <Text style={styles.cardTime}>
-                                        {formatInvitationDate(invitation.dateStart, invitation.dateEnd)}
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={styles.contentContainer}
+                        >
+                            {businessInvitations.map((invitation) => (
+                                <TouchableOpacity
+                                    key={invitation.id}
+                                    style={[styles.card, {width: CARD_WIDTH, borderLeftWidth: 4, borderLeftColor: colors.sage.primary}]}
+                                    onPress={() => setSelectedInvitation(invitation)}
+                                >
+                                    <Text style={styles.cardGroupScroll}>
+                                        {invitation.businessName}
                                     </Text>
-                                </View>
-                            </TouchableOpacity>
-                        ))
+                                    <Text style={styles.cardTitle}>{invitation.name}</Text>
+                                    <View style={styles.cardFooter}>
+                                        <Text style={styles.cardTime}>
+                                            {formatInvitationDate(invitation.dateStart, invitation.dateEnd)}
+                                        </Text>
+                                    </View>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
                     )}
                 </>
             )}

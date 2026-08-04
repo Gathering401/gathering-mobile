@@ -5,6 +5,8 @@ import * as Notifications from 'expo-notifications';
 import {View, ActivityIndicator, TouchableOpacity} from 'react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {Ionicons} from "@expo/vector-icons";
+import {colors} from "../styles/colors";
+import {styles} from "../styles/layout";
 
 const queryClient = new QueryClient();
 
@@ -95,7 +97,7 @@ export default function RootLayout() {
 
     if (!isReady) {
         return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            <View style={styles.loader}>
                 <ActivityIndicator size="large" />
             </View>
         );
@@ -106,26 +108,29 @@ export default function RootLayout() {
             <Stack>
                 <Stack.Screen
                     name="(tabs)"
-                    options={({ navigation }) => ({
-                        title: 'Gathering',
-                        headerRight: () => {
-                            const state = navigation.getState();
-                            const activeTab = state?.routes[state.index]?.state?.routes[
-                            state?.routes[state.index]?.state?.index ?? 0
-                                ]?.name;
+                    options={({ navigation }) => {
+                        const rootState = navigation.getState();
+                        const tabsRoute = rootState?.routes[rootState.index];
+                        const nestedTabState = tabsRoute?.state;
+                        const activeTabIndex = nestedTabState?.index ?? 0;
+                        const activeTab = nestedTabState?.routes[activeTabIndex]?.name;
 
-                            if (activeTab !== 'index') return null;
+                        return {
+                            title: 'Gathering',
+                            headerRight: () => {
+                                if (activeTab !== 'index') return null;
 
-                            return (
-                                <TouchableOpacity
-                                    onPress={() => router.push('/new-event')}
-                                    style={{ marginRight: 16 }}
-                                >
-                                    <Ionicons name="add" size={26} color="#228be6" />
-                                </TouchableOpacity>
-                            );
-                        }
-                    })}
+                                return (
+                                    <TouchableOpacity
+                                        onPress={() => router.push('/new-event')}
+                                        style={styles.newEvent}
+                                    >
+                                        <Ionicons name="add" size={20} color={colors.terracotta.primary} />
+                                    </TouchableOpacity>
+                                );
+                            }
+                        };
+                    }}
                 />
                 <Stack.Screen name="signup" options={{ headerShown: false }} />
                 <Stack.Screen name="login" options={{ headerShown: false }} />
