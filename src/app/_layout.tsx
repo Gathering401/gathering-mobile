@@ -143,12 +143,23 @@ export default function RootLayout() {
                         const activeTab = nestedTabState?.routes[activeTabIndex]?.name;
 
                         return {
-                            title: activeTab === 'profile' ? 'Profile' : 'Gathering',
+                            title: activeTab === 'profile' ? 'Profile' : activeTab === 'groups' ? 'Groups' : 'Gathering',
                             headerRight: () => {
                                 if (activeTab === 'index') {
                                     return (
                                         <TouchableOpacity
                                             onPress={() => router.push('/new-event')}
+                                            style={styles.newEvent}
+                                        >
+                                            <Ionicons name="add" size={20} color={colors.terracotta.primary} />
+                                        </TouchableOpacity>
+                                    );
+                                }
+
+                                if (activeTab === 'groups') {
+                                    return (
+                                        <TouchableOpacity
+                                            onPress={() => router.push('/new-group')}
                                             style={styles.newEvent}
                                         >
                                             <Ionicons name="add" size={20} color={colors.terracotta.primary} />

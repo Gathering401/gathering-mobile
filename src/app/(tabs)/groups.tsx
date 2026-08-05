@@ -3,16 +3,18 @@ import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-    View, Text, TextInput, TouchableOpacity,
-    ScrollView, ActivityIndicator, RefreshControl
+    View, Text, TextInput, ScrollView, ActivityIndicator,
+    RefreshControl, KeyboardAvoidingView, Platform, Keyboard
 } from 'react-native';
 import { GatheringGroup } from '../../constants/GatheringGroup';
 import GroupCard from "../../components/GroupCard";
 import { styles } from "../../styles/groups";
+import { useHeaderHeight } from '@react-navigation/elements';
 
 const Groups = () => {
     const router = useRouter();
     const queryClient = useQueryClient();
+    const headerHeight = useHeaderHeight();
     const [token, setToken] = useState<string | null>(null);
     const [search, setSearch] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -26,6 +28,11 @@ const Groups = () => {
         const timer = setTimeout(() => setDebouncedSearch(search), 300);
         return () => clearTimeout(timer);
     }, [search]);
+
+    useEffect(() => {
+        const sub = Keyboard.addListener('keyboardWillShow', () => console.log('keyboard will show fired'));
+        return () => sub.remove();
+    }, []);
 
     const authHeader = {
         'Content-Type': 'application/json',
@@ -104,60 +111,64 @@ const Groups = () => {
     );
 
     return (
-        <ScrollView
-            contentContainerStyle={styles.container}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        <KeyboardAvoidingView
+            style={{ flex: 1 }}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={headerHeight}
         >
-            <View style={styles.header}>
-                <Text style={styles.title}>Groups</Text>
-                <TouchableOpacity style={styles.button} onPress={() => router.push('/new-group')}>
-                    <Text style={styles.buttonText}>New Group</Text>
-                </TouchableOpacity>
-            </View>
-            <TextInput
-                style={styles.searchInput}
-                placeholder="Search groups..."
-                value={search}
-                onChangeText={setSearch}
-            />
-            {joinedLoading && <ActivityIndicator style={{ marginVertical: 8 }} />}
-            {!!joinedError && <Text style={styles.errorText}>Failed to load your groups.</Text>}
             <ScrollView
-                style={styles.joinedGroupsList}
-                scrollEnabled={filteredJoinedGroups.length > 3}
-                nestedScrollEnabled
+                style={{ flex: 1 }}
+                contentContainerStyle={styles.container}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
             >
-                {filteredJoinedGroups.map((group) => (
+                <Text style={styles.sectionTitle}>Your groups</Text>
+                {joinedLoading && <ActivityIndicator style={{ marginVertical: 8 }} />}
+                {!!joinedError && <Text style={styles.errorText}>Failed to load your groups.</Text>}
+                <ScrollView
+                    style={styles.joinedGroupsList}
+                    scrollEnabled={filteredJoinedGroups.length > 3}
+                    nestedScrollEnabled
+                >
+                    {filteredJoinedGroups.map((group) => (
+                        <GroupCard
+                            key={group.id}
+                            group={group}
+                            onPress={() => router.push(`/group/${group.id}`)}
+                            onInviteResponse={(accepted) => handleInviteResponse(group.id, accepted)}
+                        />
+                    ))}
+                    {!joinedLoading && filteredJoinedGroups.length === 0 && (
+                        <Text style={styles.emptyText}>
+                            {debouncedSearch ? 'No joined groups match your search.' : 'No groups yet — create one to get started.'}
+                        </Text>
+                    )}
+                </ScrollView>
+                <View style={styles.divider} />
+                <Text style={styles.sectionTitle}>Join another group</Text>
+                {discoverLoading && <ActivityIndicator style={{ marginVertical: 8 }} />}
+                {discoverableGroups.map((group) => (
                     <GroupCard
                         key={group.id}
                         group={group}
                         onPress={() => router.push(`/group/${group.id}`)}
-                        onInviteResponse={(accepted) => handleInviteResponse(group.id, accepted)}
+                        onJoin={() => handleJoin(group.id)}
                     />
                 ))}
-                {!joinedLoading && filteredJoinedGroups.length === 0 && (
+                {!discoverLoading && discoverableGroups.length === 0 && (
                     <Text style={styles.emptyText}>
-                        {debouncedSearch ? 'No joined groups match your search.' : 'No groups yet — create one to get started.'}
+                        {debouncedSearch ? 'No groups found matching your search.' : 'No groups available to join.'}
                     </Text>
                 )}
             </ScrollView>
-            <View style={styles.divider} />
-            <Text style={styles.sectionTitle}>Join another group</Text>
-            {discoverLoading && <ActivityIndicator style={{ marginVertical: 8 }} />}
-            {discoverableGroups.map((group) => (
-                <GroupCard
-                    key={group.id}
-                    group={group}
-                    onPress={() => router.push(`/group/${group.id}`)}
-                    onJoin={() => handleJoin(group.id)}
+            <View style={styles.searchBar}>
+                <TextInput
+                    style={styles.searchInput}
+                    placeholder="Search groups..."
+                    value={search}
+                    onChangeText={setSearch}
                 />
-            ))}
-            {!discoverLoading && discoverableGroups.length === 0 && (
-                <Text style={styles.emptyText}>
-                    {debouncedSearch ? 'No groups found matching your search.' : 'No groups available to join.'}
-                </Text>
-            )}
-        </ScrollView>
+            </View>
+        </KeyboardAvoidingView>
     );
 };
 
