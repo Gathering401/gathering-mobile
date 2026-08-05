@@ -269,7 +269,6 @@ const SignUp = () => {
                             />
                         </>
                     )}
-
                     <TouchableOpacity
                         style={styles.button}
                         onPress={handleSubmit(onSubmit)}
@@ -277,7 +276,16 @@ const SignUp = () => {
                     >
                         <Text style={styles.buttonText}>{loading ? 'Submitting...' : isEdit ? 'Save' : 'Submit'}</Text>
                     </TouchableOpacity>
-                    {!isEdit && (
+                    {isEdit ? (
+                        <>
+                            <TouchableOpacity onPress={() => router.push('/change-password')}>
+                                <Text style={styles.editLink}>Change Password</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => router.back()}>
+                                <Text style={styles.editLink}>Cancel</Text>
+                            </TouchableOpacity>
+                        </>
+                    ) : (
                         <TouchableOpacity onPress={() => router.push('/login')}>
                             <Text style={styles.link}>Already have an account? Log in here</Text>
                         </TouchableOpacity>

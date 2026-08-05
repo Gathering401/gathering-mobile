@@ -14,6 +14,7 @@ export const styles = StyleSheet.create({
     button: {backgroundColor: colors.terracotta.primary, borderRadius: 8, padding: 14, alignItems: 'center', marginTop: 8},
     buttonText: {color: '#fff', fontWeight: '600', fontSize: 16},
     link: {marginTop: 16, textAlign: 'center', color: colors.terracotta.primary},
+    editLink: {marginTop: 16, textAlign: 'center', color: colors.terracotta.primary, fontSize: 17},
     inputDisabled: {
         borderWidth: 1,
         borderColor: colors.sage.secondary,

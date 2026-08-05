@@ -1,15 +1,21 @@
 import { StyleSheet } from 'react-native';
+import { colors } from './colors';
 
 export const styles = StyleSheet.create({
     centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    container: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 16, backgroundColor: 'rgba(0,0,0,0.03)' },
-    editButton: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-end', gap: 4 },
-    editText: { color: '#228be6', fontSize: 13 },
-    title: { fontSize: 32, fontWeight: '700', marginBottom: 8 },
-    username: { fontSize: 18, fontWeight: '600', marginBottom: 4 },
-    name: { fontSize: 16, marginBottom: 8 },
-    field: { fontSize: 15, marginBottom: 4, color: '#444' },
-    logoutButton: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-end', marginBottom: 16, gap: 4, marginLeft: 12 },
-    logoutText: { color: '#fa5252', fontSize: 13 },
-    topActions: { flexDirection: 'row', alignSelf: 'flex-end', marginBottom: 16 },
+    container: { flex: 1, padding: 20 },
+    header: { marginBottom: 20 },
+    name: { fontSize: 19, fontWeight: '500', color: colors.terracotta.text },
+    username: { fontSize: 13, color: colors.sage.text, marginTop: 2 },
+    rows: { borderTopWidth: 0.5, borderTopColor: colors.sage.secondary },
+    row: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingVertical: 12,
+        borderBottomWidth: 0.5,
+        borderBottomColor: colors.sage.secondary
+    },
+    rowLast: { borderBottomWidth: 0 },
+    rowLabel: { fontSize: 13, color: colors.sage.text },
+    rowValue: { fontSize: 14, color: colors.terracotta.text },
 });
