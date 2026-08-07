@@ -5,10 +5,10 @@ import { useForm, Controller } from 'react-hook-form';
 import { useQueryClient } from '@tanstack/react-query';
 import Toast from 'react-native-toast-message';
 import {
-    View, Text, TextInput, TouchableOpacity,
-    Switch, ScrollView, KeyboardAvoidingView, Platform
+    View, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback,
+    Switch, ScrollView, KeyboardAvoidingView, Keyboard, Platform
 } from 'react-native';
-import { styles } from "../styles/new-group";
+import { styles } from '../styles/new-group';
 
 interface GroupValues {
     name: string;
@@ -32,7 +32,7 @@ const GroupForm = () => {
         defaultValues: {
             name: (params.name as string) ?? '',
             description: (params.description as string) ?? '',
-            public: params.public !== undefined ? params.public === 'true' : false
+            public: params.public !== undefined ? params.public === 'true' : true
         }
     });
 
@@ -68,75 +68,82 @@ const GroupForm = () => {
             style={{ flex: 1 }}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-            <ScrollView contentContainerStyle={styles.container}>
-                <Text style={styles.title}>{isEditing ? 'Edit Group' : 'New Group'}</Text>
-                <Controller
-                    control={control}
-                    name="name"
-                    render={({ field: { onChange, value } }) => (
-                        <View style={styles.fieldContainer}>
-                            <Text style={styles.label}>Name</Text>
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Name"
-                                maxLength={50}
-                                value={value}
-                                onChangeText={onChange}
-                            />
-                        </View>
-                    )}
-                />
-                <Controller
-                    control={control}
-                    name="description"
-                    render={({ field: { onChange, value } }) => (
-                        <View style={styles.fieldContainer}>
-                            <Text style={styles.label}>Description</Text>
-                            <TextInput
-                                style={[styles.input, styles.textarea]}
-                                placeholder="Description"
-                                maxLength={200}
-                                multiline
-                                numberOfLines={4}
-                                value={value}
-                                onChangeText={onChange}
-                            />
-                        </View>
-                    )}
-                />
-                <Controller
-                    control={control}
-                    name="public"
-                    render={({ field: { onChange, value } }) => (
-                        <View style={styles.switchRow}>
-                            <View style={styles.switchLabel}>
-                                <Text style={styles.label}>Is public?</Text>
-                                <Text style={styles.hint}>
-                                    {value
-                                        ? 'Anyone can join and cannot be banned.'
-                                        : 'Users must be invited or accepted, and cannot rejoin if removed.'}
-                                </Text>
+            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+                    <Text style={styles.title}>{isEditing ? 'Edit Group' : 'New Group'}</Text>
+                    <Text style={styles.legend}><Text style={styles.required}>*</Text> Required</Text>
+
+                    <Controller
+                        control={control}
+                        name="name"
+                        render={({ field: { onChange, value } }) => (
+                            <View style={styles.fieldContainer}>
+                                <Text style={styles.label}>Name <Text style={styles.required}>*</Text></Text>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Name"
+                                    maxLength={50}
+                                    autoCapitalize="words"
+                                    autoCorrect={false}
+                                    value={value}
+                                    onChangeText={onChange}
+                                />
                             </View>
-                            <Switch value={value} onValueChange={onChange} />
-                        </View>
-                    )}
-                />
-                <View style={styles.buttonRow}>
-                    <TouchableOpacity
-                        style={styles.cancelButton}
-                        onPress={() => router.back()}
-                    >
-                        <Text style={styles.cancelText}>Cancel</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={styles.submitButton}
-                        onPress={handleSubmit(onSubmit)}
-                    >
-                        <Text style={styles.submitText}>{isEditing ? 'Save' : 'Submit'}</Text>
-                    </TouchableOpacity>
-                </View>
-                <Toast />
-            </ScrollView>
+                        )}
+                    />
+                    <Controller
+                        control={control}
+                        name="description"
+                        render={({ field: { onChange, value } }) => (
+                            <View style={styles.fieldContainer}>
+                                <Text style={styles.label}>Description <Text style={styles.required}>*</Text></Text>
+                                <TextInput
+                                    style={[styles.input, styles.textarea]}
+                                    placeholder="Description"
+                                    maxLength={200}
+                                    multiline
+                                    numberOfLines={4}
+                                    autoCapitalize="sentences"
+                                    value={value}
+                                    onChangeText={onChange}
+                                />
+                            </View>
+                        )}
+                    />
+                    <Controller
+                        control={control}
+                        name="public"
+                        render={({ field: { onChange, value } }) => (
+                            <View style={styles.switchRow}>
+                                <View style={styles.switchLabel}>
+                                    <Text style={styles.label}>Is public?</Text>
+                                    <Text style={styles.hint}>
+                                        {value
+                                            ? 'Anyone can join'
+                                            : 'Users must be invited or accepted'}
+                                    </Text>
+                                </View>
+                                <Switch value={value} onValueChange={onChange} />
+                            </View>
+                        )}
+                    />
+                    <View style={styles.buttonRow}>
+                        <TouchableOpacity
+                            style={styles.cancelButton}
+                            onPress={() => router.back()}
+                        >
+                            <Text style={styles.cancelText}>Cancel</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.submitButton}
+                            onPress={handleSubmit(onSubmit)}
+                        >
+                            <Text style={styles.submitText}>{isEditing ? 'Save' : 'Submit'}</Text>
+                        </TouchableOpacity>
+                    </View>
+                    <Toast />
+                </ScrollView>
+            </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
     );
 };

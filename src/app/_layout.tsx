@@ -183,6 +183,7 @@ export default function RootLayout() {
                         };
                     }}
                 />
+                <Stack.Screen name="new-group" options={{ headerShown: false }} />
                 <Stack.Screen name="signup" options={{ headerShown: false }} />
                 <Stack.Screen name="login" options={{ headerShown: false }} />
                 <Stack.Screen name="forgot-password" options={{ headerShown: false }} />
@@ -194,6 +195,13 @@ export default function RootLayout() {
                         headerBackButtonDisplayMode: 'minimal',
                         headerTransparent: true,
                         headerShadowVisible: false,
+                    }}
+                />
+                <Stack.Screen
+                    name="group/[id]"
+                    options={{
+                        headerTitle: '',
+                        headerBackButtonDisplayMode: 'minimal',
                     }}
                 />
             </Stack>

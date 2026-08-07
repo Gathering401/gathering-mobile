@@ -29,11 +29,6 @@ const Groups = () => {
         return () => clearTimeout(timer);
     }, [search]);
 
-    useEffect(() => {
-        const sub = Keyboard.addListener('keyboardWillShow', () => console.log('keyboard will show fired'));
-        return () => sub.remove();
-    }, []);
-
     const authHeader = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
