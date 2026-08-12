@@ -32,7 +32,7 @@ const Groups = () => {
     const authHeader = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
-    };
+    }
 
     const { isLoading: joinedLoading, data: joinedGroups = [], error: joinedError } = useQuery<GatheringGroup[]>({
         queryKey: ['groups-my'],
@@ -53,23 +53,32 @@ const Groups = () => {
         enabled: !!token,
         queryFn: async () => {
             const params = new URLSearchParams();
-            if (debouncedSearch) params.set('searchString', debouncedSearch);
+
+            if (debouncedSearch) {
+                params.set('searchString', debouncedSearch);
+            }
+
             const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/group/available-groups?${params}`, {
                 method: 'GET',
                 headers: authHeader
             });
+
             const data = await res.json();
+
             if (data.success) {
                 return data.response;
             }
+
             throw new Error(data.error);
         }
     });
 
     const onRefresh = async () => {
         setRefreshing(true);
+
         await queryClient.invalidateQueries({ queryKey: ['groups-my'] });
         await queryClient.invalidateQueries({ queryKey: ['groups-available'] });
+
         setRefreshing(false);
     };
 
@@ -78,10 +87,12 @@ const Groups = () => {
             `${process.env.EXPO_PUBLIC_API_URL}/group/invite-response?id=${groupId}&accepted=${accepted}`,
             { method: 'PUT', headers: authHeader }
         );
+
         const data = await res.json();
         if (!data.success) {
             throw new Error(data.error);
         }
+
         await queryClient.invalidateQueries({ queryKey: ['groups-my'], exact: true });
     };
 
@@ -90,20 +101,21 @@ const Groups = () => {
             `${process.env.EXPO_PUBLIC_API_URL}/group/request-to-join?id=${groupId}`,
             { method: 'POST', headers: authHeader }
         );
+
         const data = await res.json();
         if (data.success) {
             const group = discoverableGroups.find(g => g.id === groupId);
+
             await queryClient.invalidateQueries({ queryKey: ['groups-my'] });
             await queryClient.invalidateQueries({ queryKey: ['groups-available'] });
+
             if (group?.public) {
                 router.push(`/group/${groupId}`);
             }
         }
     };
 
-    const filteredJoinedGroups = joinedGroups.filter(g =>
-        g.name.toLowerCase().includes(debouncedSearch.toLowerCase())
-    );
+    const filteredJoinedGroups = joinedGroups.filter(g => g.name.toLowerCase().includes(debouncedSearch.toLowerCase()));
 
     return (
         <KeyboardAvoidingView

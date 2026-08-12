@@ -726,11 +726,11 @@ const GroupDisplay = () => {
                                 <Text style={styles.modalSectionLabel}>All events</Text>
                                 <ScrollView
                                     style={styles.eventsList}
-                                    scrollEnabled={allEvents.length > 3}
+                                    scrollEnabled={allEvents?.length > 3}
                                     nestedScrollEnabled
                                 >
-                                    {allEvents.map(renderEventCard)}
-                                    {allEvents.length === 0 && (
+                                    {allEvents?.map(renderEventCard)}
+                                    {allEvents?.length === 0 && (
                                         <Text style={styles.emptyText}>No events in the next year.</Text>
                                     )}
                                 </ScrollView>
