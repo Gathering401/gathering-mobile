@@ -30,7 +30,7 @@ interface GroupEvent {
     myRsvp: Rsvp;
 }
 
-const rsvpColor = (rsvp: Rsvp): string => {
+const rsvpColor = (rsvp: Rsvp | undefined): string => {
     switch (rsvp) {
         case Rsvp.attending:
             return '#40c057';
@@ -85,9 +85,15 @@ const GroupDisplay = () => {
             throw new Error(data.error);
         }
     });
-    const group = data?.group;
-    const currentRole = data?.currentRole;
-    const allowNotifications = data?.allowNotifications;
+
+    const groupResponse = data as {
+        group: GatheringGroup;
+        currentRole: Role;
+        allowNotifications: boolean;
+    }
+    const group = groupResponse?.group as GatheringGroup;
+    const currentRole = groupResponse?.currentRole as Role;
+    const allowNotifications = groupResponse?.allowNotifications as boolean;
 
     const {data: allEvents = []}: UseQueryResult<GroupEvent[]> = useQuery<GroupEvent[]>({
         queryKey: [`groupId-${groupId}-all-events`],
@@ -143,7 +149,7 @@ const GroupDisplay = () => {
         onSuccess: () => router.replace('/(tabs)/groups')
     });
 
-    const {data: searchResults, isLoading: loadingSearch}: UseQueryResult = useQuery({
+    const {data: searchData, isLoading: loadingSearch}: UseQueryResult = useQuery({
         queryKey: [`search-users-${groupId}-${debouncedInviteSearch}`],
         enabled: !!debouncedInviteSearch && !!authHeader.Authorization,
         queryFn: async () => {
@@ -156,6 +162,11 @@ const GroupDisplay = () => {
             throw new Error(data.error);
         }
     });
+    const searchResults = searchData as {
+        id: number;
+        username: string;
+        invite_status: number | null;
+    }[];
 
     const {mutate: inviteUser} = useMutation({
         mutationFn: async (userId: number) => {
@@ -201,7 +212,7 @@ const GroupDisplay = () => {
         }
     });
 
-    const {updateRsvp} = useRsvpUpdate(async () => {
+    const {updateRsvp, seriesPromptVisible, confirmSeriesChoice, cancelSeriesPrompt} = useRsvpUpdate(async () => {
         if (rsvpPickerEvent) {
             await queryClient.invalidateQueries({queryKey: [`eventId-${rsvpPickerEvent.id}`]});
         }
@@ -430,9 +441,13 @@ const GroupDisplay = () => {
                 }}
             />
             <View style={styles.titleRow}>
-                <Text style={styles.title}>{group?.name}</Text>
+                <View>
+                    <Text style={styles.title}>{group?.name}</Text>
+                    {!!ownerUsername && <Text style={styles.ledBy}>Led by {ownerUsername}</Text>}
+                </View>
                 {user?.expoPushToken && (
                     <TouchableOpacity
+                        style={[styles.notifyButton, allowNotifications && styles.notifyButtonActive]}
                         onPress={() => updateNotificationPreference(!allowNotifications)}
                         hitSlop={8}
                         accessibilityRole="button"
@@ -440,8 +455,8 @@ const GroupDisplay = () => {
                     >
                         <Feather
                             name={allowNotifications ? 'bell' : 'bell-off'}
-                            size={20}
-                            color={allowNotifications ? colors.terracotta.primary : '#adb5bd'}
+                            size={18}
+                            color={allowNotifications ? '#fff' : colors.terracotta.primary}
                         />
                     </TouchableOpacity>
                 )}
@@ -451,9 +466,7 @@ const GroupDisplay = () => {
             )}
             {hasOtherMembers && (
                 <View style={styles.sectionRow}>
-                    <Text style={styles.metaText}>
-                        <Text style={styles.membersLabel}>Members</Text> - led by {ownerUsername}
-                    </Text>
+                    <Text style={styles.sectionLabel}>Members</Text>
                     {isAdmin && (
                         <View style={styles.actionIcons}>
                             <TouchableOpacity
@@ -467,10 +480,10 @@ const GroupDisplay = () => {
                             </TouchableOpacity>
                             <View>
                                 <TouchableOpacity
-                                    style={styles.iconButtonFilled}
+                                    style={styles.iconButton}
                                     onPress={() => setMembersPanelOpened(true)}
                                 >
-                                    <Ionicons name="people-outline" size={15} color={colors.terracotta.text}/>
+                                    <Ionicons name="people-outline" size={15} color={colors.terracotta.primary}/>
                                 </TouchableOpacity>
                                 {pendingMembers.length > 0 && (
                                     <View style={styles.iconBadge}>
@@ -498,10 +511,10 @@ const GroupDisplay = () => {
                 <View style={styles.actionIcons}>
                     <View>
                         <TouchableOpacity
-                            style={styles.iconButtonFilled}
+                            style={styles.iconButton}
                             onPress={() => setAllEventsPanelOpened(true)}
                         >
-                            <Ionicons name="list-outline" size={15} color={colors.terracotta.text}/>
+                            <Ionicons name="list-outline" size={15} color={colors.terracotta.primary}/>
                         </TouchableOpacity>
                         {pendingInvitations.length > 0 && (
                             <View style={styles.iconBadge}>
@@ -562,12 +575,15 @@ const GroupDisplay = () => {
                                         key={opt.value}
                                         style={styles.modalOption}
                                         onPress={() => {
-                                            void updateRsvp(
-                                                Number(groupId),
-                                                rsvpPickerEvent.id,
-                                                rsvpPickerEvent.repetition,
-                                                Number(opt.value) as Rsvp
-                                            );
+                                            setRsvpPickerEvent(null);
+                                            if (Number(opt.value) !== rsvpPickerEvent.myRsvp) {
+                                                void updateRsvp(
+                                                    Number(groupId),
+                                                    rsvpPickerEvent.id,
+                                                    rsvpPickerEvent.repetition,
+                                                    Number(opt.value) as Rsvp
+                                                );
+                                            }
                                         }}
                                     >
                                         <Text style={styles.modalOptionText}>{opt.label}</Text>
@@ -575,6 +591,34 @@ const GroupDisplay = () => {
                                 ))}
                                 <TouchableOpacity onPress={() => setRsvpPickerEvent(null)}>
                                     <Text style={styles.modalCancel}>Close</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </TouchableWithoutFeedback>
+                    </View>
+                </TouchableWithoutFeedback>
+            </Modal>
+            <Modal visible={seriesPromptVisible} transparent animationType="fade">
+                <TouchableWithoutFeedback onPress={cancelSeriesPrompt}>
+                    <View style={styles.modalOverlay}>
+                        <TouchableWithoutFeedback onPress={() => {}}>
+                            <View style={styles.modalContent}>
+                                <Text style={styles.modalTitle}>Update RSVP</Text>
+                                <Text style={styles.modalBody}>Apply this change to just this event or all upcoming
+                                    events in the series?</Text>
+                                <TouchableOpacity
+                                    style={styles.modalButton}
+                                    onPress={() => confirmSeriesChoice(false)}
+                                >
+                                    <Text style={styles.modalButtonText}>Just This Event</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[styles.modalButton, styles.modalButtonPrimary]}
+                                    onPress={() => confirmSeriesChoice(true)}
+                                >
+                                    <Text style={[styles.modalButtonText, {color: '#fff'}]}>All Upcoming Events</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity onPress={cancelSeriesPrompt}>
+                                    <Text style={styles.modalCancel}>Cancel</Text>
                                 </TouchableOpacity>
                             </View>
                         </TouchableWithoutFeedback>
@@ -641,7 +685,7 @@ const GroupDisplay = () => {
                             {!loadingSearch && searchResults?.map((u: {
                                 id: number;
                                 username: string;
-                                invite_status: number | null
+                                invite_status: number | null;
                             }) => {
                                 const alreadyInvited = u.invite_status !== null || invitedUsers.includes(u.id);
                                 return (

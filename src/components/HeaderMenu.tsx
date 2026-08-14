@@ -16,7 +16,9 @@ export const HeaderMenu = ({ items }: { items: HeaderMenuItem[] }) => {
 
     const handleSelect = (item: HeaderMenuItem) => {
         setOpen(false);
-        item.onSelect();
+        setTimeout(() => {
+            item.onSelect();
+        }, 100);
     };
 
     return (

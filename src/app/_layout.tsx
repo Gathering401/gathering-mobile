@@ -244,6 +244,13 @@ function RootLayoutNav() {
                     headerBackButtonDisplayMode: 'minimal',
                 }}
             />
+            <Stack.Screen
+                name="event/[id]"
+                options={{
+                    headerTitle: '',
+                    headerBackButtonDisplayMode: 'minimal',
+                }}
+            />
         </Stack>
     );
 }

@@ -15,6 +15,9 @@ export interface Event {
     seriesId?: number;
     repetition: Repetition;
     currentRole: Role;
+    myRsvp?: Rsvp;
+    seriesDates: string[];
+    myNotifications: boolean;
 }
 
 export interface EventUser {

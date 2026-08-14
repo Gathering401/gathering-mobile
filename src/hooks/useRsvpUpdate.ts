@@ -1,34 +1,39 @@
-import {Alert} from 'react-native';
+import {useState} from 'react';
 import {useAuthHeader} from './useAuthHeader';
 import {Rsvp} from '../constants/enums/Rsvp';
 import {Repetition} from '../constants/enums/Repetition';
 
 export const useRsvpUpdate = (onSuccess: () => void) => {
     const authHeader = useAuthHeader();
+    const [pendingRsvp, setPendingRsvp] = useState<{groupId: number; eventId: number; rsvp: Rsvp} | null>(null);
 
-    const updateRsvp = async (groupId: number, eventId: number, repetition: Repetition, rsvp: Rsvp) => {
-        const fire = async (applyToSeries: boolean) => {
-            const response = await fetch(
-                `${process.env.EXPO_PUBLIC_API_URL}/event/rsvp?id=${groupId}&eventId=${eventId}&rsvp=${rsvp}&applyToSeries=${applyToSeries}`,
-                {method: 'PUT', headers: authHeader}
-            );
-            if (!response.ok) throw new Error('Failed to update RSVP');
-            onSuccess();
-        };
+    const fire = async (groupId: number, eventId: number, rsvp: Rsvp, applyToSeries: boolean) => {
+        const response = await fetch(
+            `${process.env.EXPO_PUBLIC_API_URL}/event/rsvp?id=${groupId}&eventId=${eventId}&rsvp=${rsvp}&applyToSeries=${applyToSeries}`,
+            {method: 'PUT', headers: authHeader}
+        );
+        if (!response.ok) {
+            throw new Error('Failed to update RSVP');
+        }
+        onSuccess();
+    };
 
+    const updateRsvp = (groupId: number, eventId: number, repetition: Repetition, rsvp: Rsvp) => {
         if (repetition !== Repetition.none) {
-            Alert.alert(
-                'Update RSVP',
-                'Apply this change to just this event or all upcoming events in the series?',
-                [
-                    {text: 'Just this event', onPress: () => fire(false)},
-                    {text: 'All upcoming events', onPress: () => fire(true)}
-                ]
-            );
+            setTimeout(() => setPendingRsvp({groupId, eventId, rsvp}), 300);
         } else {
-            await fire(false);
+            void fire(groupId, eventId, rsvp, false);
         }
     }
 
-    return {updateRsvp}
+    const confirmSeriesChoice = (applyToSeries: boolean) => {
+        if (!pendingRsvp) return;
+        const {groupId, eventId, rsvp} = pendingRsvp;
+        setPendingRsvp(null);
+        void fire(groupId, eventId, rsvp, applyToSeries);
+    };
+
+    const cancelSeriesPrompt = () => setPendingRsvp(null);
+
+    return {updateRsvp, seriesPromptVisible: !!pendingRsvp, confirmSeriesChoice, cancelSeriesPrompt};
 }

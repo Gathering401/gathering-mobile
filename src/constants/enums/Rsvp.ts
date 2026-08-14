@@ -8,9 +8,9 @@ export enum Rsvp {
 }
 
 export const getRsvpsForDropdown = () => {
-    return Object.entries(Rsvp).filter(([_, value]) => typeof value !== "number").map(([key, value]) => ({ value: String(key), label: _.capitalize(value) }));
+    return Object.entries(Rsvp).filter(([_, value]) => typeof value !== "number").map(([key, value]) => ({ value: String(key), label: _.capitalize(String(value)) }));
 }
 
-export const getRsvpLabelFor = (rsvp: Rsvp) => {
+export const getRsvpLabelFor = (rsvp: Rsvp | undefined) => {
     return _.capitalize(Object.entries(Rsvp).find(([_, value]) => value === rsvp)![0]);
 }

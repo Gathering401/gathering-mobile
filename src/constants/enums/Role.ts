@@ -7,7 +7,7 @@ export enum Role {
 
 export const getRoleById = (role: Role) => Object.entries(Role).find(([_, value]) => role === value)![0];
 
-export const getRoleByValue = (role: string) => Object.entries(Role).find(([key, _]) => role === key)![1];
+export const getRoleByValue = (role: string) => (Object.entries(Role).find(([key, _]) => role === key)![1]) as Role;
 
 export const getRoleOptions = (role: Role) => [
     { label: 'Member', value: 'member' },

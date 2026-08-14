@@ -31,6 +31,17 @@ export const styles = StyleSheet.create({
     modalOption: {paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.sage.lightFill},
     modalOptionText: {fontSize: 16, color: colors.terracotta.text},
     modalCancel: {textAlign: 'center', color: colors.terracotta.primary, marginTop: 16, fontSize: 16},
+    modalBody: {fontSize: 14, color: '#555', marginBottom: 16},
+    modalButton: {
+        borderWidth: 1,
+        borderColor: colors.terracotta.primary,
+        borderRadius: 8,
+        padding: 12,
+        alignItems: 'center',
+        marginBottom: 8
+    },
+    modalButtonPrimary: {backgroundColor: colors.sage.primary, borderColor: colors.sage.primary},
+    modalButtonText: {fontSize: 15, fontWeight: '600'},
     rejectionText: {color: colors.sage.secondary, fontSize: 13, textDecorationLine: 'underline'},
     cancelButton: {marginTop: 28, alignSelf: 'center', padding: 8},
     modalButtonRow: {flexDirection: 'row', marginTop: 20, gap: 10},

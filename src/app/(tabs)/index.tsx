@@ -160,7 +160,7 @@ const Main = () => {
         }
     });
 
-    const {updateRsvp} = useRsvpUpdate(async () => {
+    const {updateRsvp, seriesPromptVisible, confirmSeriesChoice, cancelSeriesPrompt} = useRsvpUpdate(async () => {
         if (rsvpPickerEvent) {
             await queryClient.invalidateQueries({queryKey: [`eventId-${rsvpPickerEvent.id}`]});
         }
@@ -280,18 +280,51 @@ const Main = () => {
                                             <TouchableOpacity
                                                 key={opt.value}
                                                 style={styles.modalOption}
-                                                onPress={() => updateRsvp(
-                                                    rsvpPickerEvent!.groupId,
-                                                    rsvpPickerEvent!.id,
-                                                    rsvpPickerEvent!.repetition,
-                                                    Number(opt.value) as Rsvp
-                                                )}
+                                                onPress={() => {
+                                                    setRsvpPickerEvent(null);
+                                                    if (Number(opt.value) !== rsvpPickerEvent!.myRsvp) {
+                                                        updateRsvp(
+                                                            rsvpPickerEvent!.groupId,
+                                                            rsvpPickerEvent!.id,
+                                                            rsvpPickerEvent!.repetition,
+                                                            Number(opt.value) as Rsvp
+                                                        );
+                                                    }
+                                                }}
                                             >
                                                 <Text style={styles.modalOptionText}>{opt.label}</Text>
                                             </TouchableOpacity>
                                         ))}
                                         <TouchableOpacity onPress={() => setRsvpPickerEvent(null)}>
                                             <Text style={styles.modalCancel}>Close</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </TouchableWithoutFeedback>
+                            </View>
+                        </TouchableWithoutFeedback>
+                    </Modal>
+                    <Modal visible={seriesPromptVisible} transparent animationType="fade">
+                        <TouchableWithoutFeedback onPress={cancelSeriesPrompt}>
+                            <View style={styles.modalOverlay}>
+                                <TouchableWithoutFeedback onPress={() => {}}>
+                                    <View style={styles.modalContent}>
+                                        <Text style={styles.modalTitle}>Update RSVP</Text>
+                                        <Text style={styles.modalBody}>Apply this change to just this event or all upcoming
+                                            events in the series?</Text>
+                                        <TouchableOpacity
+                                            style={styles.modalButton}
+                                            onPress={() => confirmSeriesChoice(false)}
+                                        >
+                                            <Text style={styles.modalButtonText}>Just This Event</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            style={[styles.modalButton, styles.modalButtonPrimary]}
+                                            onPress={() => confirmSeriesChoice(true)}
+                                        >
+                                            <Text style={[styles.modalButtonText, {color: '#fff'}]}>All Upcoming Events</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity onPress={cancelSeriesPrompt}>
+                                            <Text style={styles.modalCancel}>Cancel</Text>
                                         </TouchableOpacity>
                                     </View>
                                 </TouchableWithoutFeedback>
