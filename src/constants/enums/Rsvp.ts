@@ -7,10 +7,12 @@ export enum Rsvp {
     maybe = 4,
 }
 
-export const getRsvpsForDropdown = () => {
-    return Object.entries(Rsvp).filter(([_, value]) => typeof value !== "number").map(([key, value]) => ({ value: String(key), label: _.capitalize(String(value)) }));
-}
+export const getRsvpsForDropdown = () =>
+    Object.entries(Rsvp).filter(([_, value]) => typeof value !== "number").map(([key, value]) => ({ value: String(key), label: _.capitalize(String(value)) }));
 
-export const getRsvpLabelFor = (rsvp: Rsvp | undefined) => {
-    return _.capitalize(Object.entries(Rsvp).find(([_, value]) => value === rsvp)![0]);
+
+export const getRsvpLabelFor = (rsvp: Rsvp | undefined | null) => {
+    const entry = Object.entries(Rsvp).find(([_, value]) => value === Number(rsvp));
+
+    return entry ? _.capitalize(entry[0]) : 'No Response';
 }

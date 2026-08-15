@@ -211,7 +211,7 @@ const Main = () => {
 
     const onMonthChange = (month: DateData) => {
         setSelectedDate(dayjs(`${month.year}-${month.month}-01`).format('YYYY-MM-DD'));
-    };
+    }
 
     return (
         <ScrollView contentContainerStyle={styles.container}>

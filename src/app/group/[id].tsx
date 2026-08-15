@@ -19,6 +19,7 @@ import dayjs from "dayjs";
 import {useAuthHeader} from '../../hooks/useAuthHeader';
 import {useRsvpUpdate} from '../../hooks/useRsvpUpdate';
 import {HeaderMenu} from '../../components/HeaderMenu';
+import Toast from "react-native-toast-message";
 
 interface GroupEvent {
     id: number;
@@ -206,6 +207,13 @@ const GroupDisplay = () => {
             queryClient.setQueryData([`groupId-${groupId}`], (old: any) =>
                 old ? {...old, allowNotifications: enabled} : old);
             return {previous};
+        },
+        onSuccess: (_data, enabled) => {
+            Toast.show({
+                type: 'success',
+                text1: 'Notifications',
+                text2: `New event notifications turned ${enabled ? 'on' : 'off'}`
+            });
         },
         onError: (_err, _enabled, context) => {
             if (context?.previous) queryClient.setQueryData([`groupId-${groupId}`], context.previous);

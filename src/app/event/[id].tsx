@@ -17,6 +17,7 @@ import {getRepetitionOptions, Repetition} from "../../constants/enums/Repetition
 import {useRsvpUpdate} from '../../hooks/useRsvpUpdate';
 import {useAuthHeader} from '../../hooks/useAuthHeader';
 import {HeaderMenu, HeaderMenuItem} from '../../components/HeaderMenu';
+import Toast from "react-native-toast-message";
 
 const rsvpSortOrder = [Rsvp.attending, Rsvp.maybe, Rsvp.pending, Rsvp.rejected];
 
@@ -91,9 +92,16 @@ const EventDisplay = () => {
             if (!data.success) {
                 throw new Error(data.error);
             }
+
+            return notifications;
         },
-        onSuccess: () => {
+        onSuccess: (notifications) => {
             void queryClient.invalidateQueries({queryKey: [`eventId-${eventId}`]});
+            Toast.show({
+                type: 'success',
+                text1: 'Reminders',
+                text2: `Reminders for this event turned ${notifications ? 'on' : 'off'}`
+            });
         }
     });
 
@@ -239,7 +247,6 @@ const EventDisplay = () => {
                         <Text style={[styles.actionButtonLabel, event.myNotifications && styles.actionButtonLabelActive]}>Notify</Text>
                     </TouchableOpacity>
                 </View>
-
                 <View style={styles.infoCard}>
                     <Text style={styles.cardLabel}>What's happening?</Text>
                     <Text style={styles.cardValue}>{event.description}</Text>
@@ -254,7 +261,6 @@ const EventDisplay = () => {
                         </>
                     )}
                 </View>
-
                 <View style={styles.rsvpPillWrap}>
                     <TouchableOpacity
                         style={[styles.rsvpPill, {backgroundColor: rsvpColor(myRsvp ?? Rsvp.pending) + '22'}]}
