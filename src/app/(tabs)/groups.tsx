@@ -1,15 +1,15 @@
-import { useState, useEffect } from 'react';
-import { useRouter } from 'expo-router';
+import {useState, useEffect} from 'react';
+import {useRouter} from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import {useQuery, useQueryClient} from '@tanstack/react-query';
 import {
     View, Text, TextInput, ScrollView, ActivityIndicator,
     RefreshControl, KeyboardAvoidingView, Platform, Keyboard
 } from 'react-native';
-import { GatheringGroup } from '../../constants/GatheringGroup';
+import {GatheringGroup} from '../../constants/GatheringGroup';
 import GroupCard from "../../components/GroupCard";
-import { styles } from "../../styles/groups";
-import { useHeaderHeight } from '@react-navigation/elements';
+import {styles} from "../../styles/groups";
+import {useHeaderHeight} from '@react-navigation/elements';
 
 const Groups = () => {
     const router = useRouter();
@@ -34,7 +34,7 @@ const Groups = () => {
         'Authorization': `Bearer ${token}`
     }
 
-    const { isLoading: joinedLoading, data: joinedGroups = [], error: joinedError } = useQuery<GatheringGroup[]>({
+    const {isLoading: joinedLoading, data: joinedGroups = [], error: joinedError} = useQuery<GatheringGroup[]>({
         queryKey: ['groups-my'],
         enabled: !!token,
         queryFn: async () => {
@@ -48,7 +48,7 @@ const Groups = () => {
         }
     });
 
-    const { isLoading: discoverLoading, data: discoverableGroups = [] } = useQuery<GatheringGroup[]>({
+    const {isLoading: discoverLoading, data: discoverableGroups = []} = useQuery<GatheringGroup[]>({
         queryKey: ['groups-available', debouncedSearch],
         enabled: !!token,
         queryFn: async () => {
@@ -76,8 +76,8 @@ const Groups = () => {
     const onRefresh = async () => {
         setRefreshing(true);
 
-        await queryClient.invalidateQueries({ queryKey: ['groups-my'] });
-        await queryClient.invalidateQueries({ queryKey: ['groups-available'] });
+        await queryClient.invalidateQueries({queryKey: ['groups-my']});
+        await queryClient.invalidateQueries({queryKey: ['groups-available']});
 
         setRefreshing(false);
     };
@@ -85,7 +85,7 @@ const Groups = () => {
     const handleInviteResponse = async (groupId: number, accepted: boolean) => {
         const res = await fetch(
             `${process.env.EXPO_PUBLIC_API_URL}/group/invite-response?id=${groupId}&accepted=${accepted}`,
-            { method: 'PUT', headers: authHeader }
+            {method: 'PUT', headers: authHeader}
         );
 
         const data = await res.json();
@@ -93,21 +93,21 @@ const Groups = () => {
             throw new Error(data.error);
         }
 
-        await queryClient.invalidateQueries({ queryKey: ['groups-my'], exact: true });
+        await queryClient.invalidateQueries({queryKey: ['groups-my'], exact: true});
     };
 
     const handleJoin = async (groupId: number) => {
         const res = await fetch(
             `${process.env.EXPO_PUBLIC_API_URL}/group/request-to-join?id=${groupId}`,
-            { method: 'POST', headers: authHeader }
+            {method: 'POST', headers: authHeader}
         );
 
         const data = await res.json();
         if (data.success) {
             const group = discoverableGroups.find(g => g.id === groupId);
 
-            await queryClient.invalidateQueries({ queryKey: ['groups-my'] });
-            await queryClient.invalidateQueries({ queryKey: ['groups-available'] });
+            await queryClient.invalidateQueries({queryKey: ['groups-my']});
+            await queryClient.invalidateQueries({queryKey: ['groups-available']});
 
             if (group?.public) {
                 router.push(`/group/${groupId}`);
@@ -119,17 +119,17 @@ const Groups = () => {
 
     return (
         <KeyboardAvoidingView
-            style={{ flex: 1 }}
+            style={{flex: 1}}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             keyboardVerticalOffset={headerHeight}
         >
             <ScrollView
-                style={{ flex: 1 }}
+                style={{flex: 1}}
                 contentContainerStyle={styles.container}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh}/>}
             >
                 <Text style={styles.sectionTitle}>Your groups</Text>
-                {joinedLoading && <ActivityIndicator style={{ marginVertical: 8 }} />}
+                {joinedLoading && <ActivityIndicator style={{marginVertical: 8}}/>}
                 {!!joinedError && <Text style={styles.errorText}>Failed to load your groups.</Text>}
                 <ScrollView
                     style={styles.joinedGroupsList}
@@ -141,7 +141,7 @@ const Groups = () => {
                             key={group.id}
                             group={group}
                             onPress={() => router.push(`/group/${group.id}`)}
-                            onInviteResponse={(accepted) => handleInviteResponse(group.id, accepted)}
+                            onInviteResponse={(accepted) => handleInviteResponse(group.id!, accepted)}
                         />
                     ))}
                     {!joinedLoading && filteredJoinedGroups.length === 0 && (
@@ -150,15 +150,15 @@ const Groups = () => {
                         </Text>
                     )}
                 </ScrollView>
-                <View style={styles.divider} />
+                <View style={styles.divider}/>
                 <Text style={styles.sectionTitle}>Join another group</Text>
-                {discoverLoading && <ActivityIndicator style={{ marginVertical: 8 }} />}
+                {discoverLoading && <ActivityIndicator style={{marginVertical: 8}}/>}
                 {discoverableGroups.map((group) => (
                     <GroupCard
                         key={group.id}
                         group={group}
                         onPress={() => router.push(`/group/${group.id}`)}
-                        onJoin={() => handleJoin(group.id)}
+                        onJoin={() => handleJoin(group.id!)}
                     />
                 ))}
                 {!discoverLoading && discoverableGroups.length === 0 && (

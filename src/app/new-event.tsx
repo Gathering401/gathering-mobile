@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import {useState, useEffect, useRef} from 'react';
+import {useRouter, useLocalSearchParams} from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import {useForm, Controller} from 'react-hook-form';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
@@ -11,8 +11,8 @@ import {
     KeyboardAvoidingView, Platform, Modal, ActivityIndicator,
     TouchableWithoutFeedback, Keyboard
 } from 'react-native';
-import { GatheringGroup } from '../constants/GatheringGroup';
-import { Repetition, getRepetitionOptions, getRepetitionByValue } from '../constants/enums/Repetition';
+import {GatheringGroup} from '../constants/GatheringGroup';
+import {Repetition, getRepetitionOptions, getRepetitionByValue} from '../constants/enums/Repetition';
 import {styles} from "../styles/new-event";
 import {AddressAutocomplete, AddressAutocompleteHandle} from "../components/AddressAutoComplete";
 import {SafeAreaView} from "react-native-safe-area-context";
@@ -57,12 +57,12 @@ const EventForm = () => {
     useEffect(() => {
         if (showDatePicker) {
             setTimeout(() => {
-                scrollViewRef.current?.scrollTo({ y: dateFieldY, animated: true });
+                scrollViewRef.current?.scrollTo({y: dateFieldY, animated: true});
             }, 100);
         }
     }, [showDatePicker, dateFieldY]);
 
-    const { control, handleSubmit, watch, setValue } = useForm({
+    const {control, handleSubmit, watch, setValue} = useForm({
         defaultValues: {
             name: (params.name as string) ?? '',
             description: (params.description as string) ?? '',
@@ -78,7 +78,7 @@ const EventForm = () => {
     const selectedGroupId = watch('groupId');
     const selectedRepetition = watch('repetition');
 
-    const { isLoading, data: myGroups = [] } = useQuery<GatheringGroup[]>({
+    const {isLoading, data: myGroups = []} = useQuery<GatheringGroup[]>({
         queryKey: ['groups', 'creatable'],
         enabled: !!token,
         queryFn: async () => {
@@ -104,10 +104,22 @@ const EventForm = () => {
         let count: number;
 
         switch (values.repetition) {
-            case Repetition.annually: interval = 'year'; count = 100; break;
-            case Repetition.monthly: interval = 'month'; count = 60; break;
-            case Repetition.weekly: interval = 'week'; count = 104; break;
-            default: interval = undefined; count = 1; break;
+            case Repetition.annually:
+                interval = 'year';
+                count = 100;
+                break;
+            case Repetition.monthly:
+                interval = 'month';
+                count = 60;
+                break;
+            case Repetition.weekly:
+                interval = 'week';
+                count = 104;
+                break;
+            default:
+                interval = undefined;
+                count = 1;
+                break;
         }
 
         for (let i = 0; i < count; i++) {
@@ -127,7 +139,7 @@ const EventForm = () => {
         };
     };
 
-    const { mutate: submitEvent, isPending } = useMutation({
+    const {mutate: submitEvent, isPending} = useMutation({
         mutationFn: async (values: EventValues) => {
             let url: string;
             let method: string;
@@ -181,52 +193,56 @@ const EventForm = () => {
                 groupId: values.groupId
             }
         },
-        onSuccess: async ({ data, groupId }) => {
+        onSuccess: async ({data, groupId}) => {
             if (isEditing) {
-                await queryClient.invalidateQueries({ queryKey: [`eventId-${params.id}`] });
-                await queryClient.invalidateQueries({ queryKey: [`groupId-${groupId}`] });
-                await queryClient.invalidateQueries({ queryKey: ['events'] });
+                await queryClient.invalidateQueries({queryKey: [`eventId-${params.id}`]});
+                await queryClient.invalidateQueries({queryKey: [`groupId-${groupId}`]});
+                await queryClient.invalidateQueries({queryKey: ['events']});
             } else {
-                await queryClient.invalidateQueries({ queryKey: [`groupId-${groupId}`] });
-                await queryClient.invalidateQueries({ queryKey: ['events'] });
+                await queryClient.invalidateQueries({queryKey: [`groupId-${groupId}`]});
+                await queryClient.invalidateQueries({queryKey: ['events']});
             }
             if (businessInvitationId) {
-                await queryClient.invalidateQueries({ queryKey: ['activeInvitations'] });
+                await queryClient.invalidateQueries({queryKey: ['activeInvitations']});
             }
             router.replace({
                 pathname: isEditing ? `/event/${params.id}` : `/event/${data.response.id}`,
-                params: { groupId: String(groupId) }
+                params: {groupId: String(groupId)}
             });
         },
         onError: () => {
-            Toast.show({ type: 'error', text1: 'Error', text2: 'Something went wrong. Please try again.' });
+            Toast.show({type: 'error', text1: 'Error', text2: 'Something went wrong. Please try again.'});
         }
     });
 
     const onSubmit = (values: EventValues) => {
         if (!values.name.trim()) {
-            return Toast.show({ type: 'error', text1: 'Name', text2: 'Event name is required' });
+            return Toast.show({type: 'error', text1: 'Name', text2: 'Event name is required'});
         }
         if (values.name.length > 50) {
-            return Toast.show({ type: 'error', text1: 'Name', text2: 'Event name cannot exceed 50 characters' });
+            return Toast.show({type: 'error', text1: 'Name', text2: 'Event name cannot exceed 50 characters'});
         }
         if (!values.description.trim()) {
-            return Toast.show({ type: 'error', text1: 'Description', text2: 'Event description is required' });
+            return Toast.show({type: 'error', text1: 'Description', text2: 'Event description is required'});
         }
         if (values.description.length > 500) {
-            return Toast.show({ type: 'error', text1: 'Description', text2: 'Event description cannot exceed 500 characters' });
+            return Toast.show({
+                type: 'error',
+                text1: 'Description',
+                text2: 'Event description cannot exceed 500 characters'
+            });
         }
         if (!values.location.trim()) {
-            return Toast.show({ type: 'error', text1: 'Location', text2: 'Event location is required' });
+            return Toast.show({type: 'error', text1: 'Location', text2: 'Event location is required'});
         }
         if (values.location.length > 100) {
-            return Toast.show({ type: 'error', text1: 'Location', text2: 'Event location cannot exceed 100 characters' });
+            return Toast.show({type: 'error', text1: 'Location', text2: 'Event location cannot exceed 100 characters'});
         }
         if (!values.date) {
-            return Toast.show({ type: 'error', text1: 'Date', text2: 'Please select a date' });
+            return Toast.show({type: 'error', text1: 'Date', text2: 'Please select a date'});
         }
         if (dayjs(values.date).isBefore(dayjs().add(1, 'day'))) {
-            return Toast.show({ type: 'error', text1: 'Date', text2: 'Event date must be in the future' });
+            return Toast.show({type: 'error', text1: 'Date', text2: 'Event date must be in the future'});
         }
         submitEvent(values);
     }
@@ -235,19 +251,23 @@ const EventForm = () => {
     const selectedGroup = myGroups.find(g => g.id === selectedGroupId);
 
     return (
-        <SafeAreaView style={{ flex: 1 }} edges={['top']}>
-            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-                <TouchableWithoutFeedback onPress={() => { Keyboard.dismiss(); locationRef.current?.blur(); }}>
-                    <View style={{ flex: 1 }}>
+        <SafeAreaView style={{flex: 1}} edges={['top']}>
+            <KeyboardAvoidingView style={{flex: 1}} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+                <TouchableWithoutFeedback onPress={() => {
+                    Keyboard.dismiss();
+                    locationRef.current?.blur();
+                }}>
+                    <View style={{flex: 1}}>
                         <ScrollView ref={scrollViewRef} contentContainerStyle={styles.container}>
                             <Text style={styles.title}>{isEditing ? 'Edit Event' : 'New Event'}</Text>
                             <Text style={styles.legend}>* Required</Text>
                             <Controller
                                 control={control}
                                 name="name"
-                                render={({ field: { onChange, value } }) => (
+                                render={({field: {onChange, value}}) => (
                                     <View style={styles.fieldContainer}>
-                                        <Text style={styles.label}>Event Name<Text style={styles.required}> *</Text></Text>
+                                        <Text style={styles.label}>Event Name<Text
+                                            style={styles.required}> *</Text></Text>
                                         <TextInput
                                             style={styles.input}
                                             placeholder="Event Name"
@@ -263,9 +283,10 @@ const EventForm = () => {
                             <Controller
                                 control={control}
                                 name="description"
-                                render={({ field: { onChange, value } }) => (
+                                render={({field: {onChange, value}}) => (
                                     <View style={styles.fieldContainer}>
-                                        <Text style={styles.label}>Description<Text style={styles.required}> *</Text></Text>
+                                        <Text style={styles.label}>Description<Text
+                                            style={styles.required}> *</Text></Text>
                                         <TextInput
                                             style={[styles.input, styles.textarea]}
                                             placeholder="Description"
@@ -282,9 +303,10 @@ const EventForm = () => {
                             <Controller
                                 control={control}
                                 name="location"
-                                render={({ field: { onChange, value } }) => (
+                                render={({field: {onChange, value}}) => (
                                     <View style={styles.fieldContainer}>
-                                        <Text style={styles.label}>Location<Text style={styles.required}> *</Text></Text>
+                                        <Text style={styles.label}>Location<Text
+                                            style={styles.required}> *</Text></Text>
                                         <AddressAutocomplete
                                             ref={locationRef}
                                             initialValue={value}
@@ -299,7 +321,7 @@ const EventForm = () => {
                             <Controller
                                 control={control}
                                 name="cost"
-                                render={({ field: { onChange, value } }) => (
+                                render={({field: {onChange, value}}) => (
                                     <View style={styles.fieldContainer}>
                                         <Text style={styles.label}>Cost ($)</Text>
                                         <TextInput
@@ -322,7 +344,7 @@ const EventForm = () => {
                                     disabled={dateDisabled}
                                     onPress={() => setShowDatePicker(true)}
                                 >
-                                    <Text style={{ color: dateDisabled ? '#999' : selectedDate ? '#333' : '#999' }}>
+                                    <Text style={{color: dateDisabled ? '#999' : selectedDate ? '#333' : '#999'}}>
                                         {selectedDate ? dayjs(selectedDate).format('MMM D, YYYY h:mm A') : 'Select date'}
                                     </Text>
                                 </TouchableOpacity>
@@ -340,7 +362,8 @@ const EventForm = () => {
                                                 }
                                             }}
                                         />
-                                        <TouchableOpacity style={styles.secondaryButton} onPress={() => setShowDatePicker(false)}>
+                                        <TouchableOpacity style={styles.secondaryButton}
+                                                          onPress={() => setShowDatePicker(false)}>
                                             <Text style={styles.secondaryButtonText}>Done</Text>
                                         </TouchableOpacity>
                                     </View>
@@ -353,7 +376,7 @@ const EventForm = () => {
                                     disabled={repetitionDisabled}
                                     onPress={() => setShowRepetitionPicker(true)}
                                 >
-                                    <Text style={{ color: repetitionDisabled ? '#999' : '#333' }}>
+                                    <Text style={{color: repetitionDisabled ? '#999' : '#333'}}>
                                         {repetitionOptions.find(o => getRepetitionByValue(o.value) === selectedRepetition)?.label ?? 'Select repetition'}
                                     </Text>
                                 </TouchableOpacity>
@@ -391,7 +414,7 @@ const EventForm = () => {
                                     disabled={groupDisabled}
                                     onPress={() => setShowGroupPicker(true)}
                                 >
-                                    <Text style={{ color: groupDisabled ? '#999' : selectedGroup ? '#333' : '#999' }}>
+                                    <Text style={{color: groupDisabled ? '#999' : selectedGroup ? '#333' : '#999'}}>
                                         {isLoading ? 'Loading...' : selectedGroup?.name ?? 'Select a group'}
                                     </Text>
                                 </TouchableOpacity>
@@ -424,14 +447,15 @@ const EventForm = () => {
                                 <TouchableOpacity style={styles.cancelButton} onPress={() => router.back()}>
                                     <Text style={styles.cancelText}>Cancel</Text>
                                 </TouchableOpacity>
-                                <TouchableOpacity style={styles.submitButton} onPress={handleSubmit(onSubmit)} disabled={isPending}>
+                                <TouchableOpacity style={styles.submitButton} onPress={handleSubmit(onSubmit)}
+                                                  disabled={isPending}>
                                     {isPending
-                                        ? <ActivityIndicator color="#fff" />
+                                        ? <ActivityIndicator color="#fff"/>
                                         : <Text style={styles.submitText}>{isEditing ? 'Save' : 'Submit'}</Text>
                                     }
                                 </TouchableOpacity>
                             </View>
-                            <Toast />
+                            <Toast/>
                         </ScrollView>
                     </View>
                 </TouchableWithoutFeedback>

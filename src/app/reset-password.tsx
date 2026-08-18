@@ -17,7 +17,7 @@ const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$
 
 const ResetPassword = () => {
     const router = useRouter();
-    const {token} = useLocalSearchParams<{token: string}>();
+    const {token} = useLocalSearchParams<{ token: string }>();
     const {control, handleSubmit} = useForm<ResetPasswordValues>({
         defaultValues: {
             newPassword: '',
@@ -33,7 +33,11 @@ const ResetPassword = () => {
 
     const onSubmit = async (values: ResetPasswordValues) => {
         if (!passwordRegex.test(values.newPassword)) {
-            return Toast.show({type: 'error', text1: 'Password', text2: 'Minimum 8 characters, 1 number, 1 uppercase, 1 lowercase, 1 symbol'});
+            return Toast.show({
+                type: 'error',
+                text1: 'Password',
+                text2: 'Minimum 8 characters, 1 number, 1 uppercase, 1 lowercase, 1 symbol'
+            });
         }
         if (values.newPassword !== values.confirmPassword) {
             return Toast.show({type: 'error', text1: 'Confirm Password', text2: 'Passwords do not match'});

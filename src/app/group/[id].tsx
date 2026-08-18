@@ -71,7 +71,11 @@ const GroupDisplay = () => {
         return () => clearTimeout(timer);
     }, [searchInvite]);
 
-    const {isLoading, data, error, refetch}: UseQueryResult = useQuery<{ group: GatheringGroup, currentRole: Role, allowNotifications: boolean }>({
+    const {isLoading, data, error, refetch}: UseQueryResult = useQuery<{
+        group: GatheringGroup,
+        currentRole: Role,
+        allowNotifications: boolean
+    }>({
         queryKey: [`groupId-${groupId}`],
         enabled: !!authHeader.Authorization,
         queryFn: async () => {
@@ -81,7 +85,11 @@ const GroupDisplay = () => {
             });
             const data = await response.json();
             if (data.success) {
-                return {group: data.response, currentRole: data.currentRole, allowNotifications: data.allowNotifications};
+                return {
+                    group: data.response,
+                    currentRole: data.currentRole,
+                    allowNotifications: data.allowNotifications
+                };
             }
             throw new Error(data.error);
         }
@@ -189,7 +197,9 @@ const GroupDisplay = () => {
                 `${process.env.EXPO_PUBLIC_API_URL}/group/request-response?id=${groupId}&userId=${userId}&accepted=${accepted}`,
                 {method: 'PUT', headers: authHeader}
             );
-            if (response.ok) await refetch();
+            if (response.ok) {
+                await refetch();
+            }
         }
     });
 
@@ -199,7 +209,9 @@ const GroupDisplay = () => {
                 `${process.env.EXPO_PUBLIC_API_URL}/group/notification-preference?id=${groupId}&enabled=${enabled}`,
                 {method: 'PUT', headers: authHeader}
             );
-            if (!response.ok) throw new Error('Failed to update notification preference');
+            if (!response.ok) {
+                throw new Error('Failed to update notification preference');
+            }
         },
         onMutate: async (enabled: boolean) => {
             await queryClient.cancelQueries({queryKey: [`groupId-${groupId}`]});
@@ -608,7 +620,8 @@ const GroupDisplay = () => {
             <Modal visible={seriesPromptVisible} transparent animationType="fade">
                 <TouchableWithoutFeedback onPress={cancelSeriesPrompt}>
                     <View style={styles.modalOverlay}>
-                        <TouchableWithoutFeedback onPress={() => {}}>
+                        <TouchableWithoutFeedback onPress={() => {
+                        }}>
                             <View style={styles.modalContent}>
                                 <Text style={styles.modalTitle}>Update RSVP</Text>
                                 <Text style={styles.modalBody}>Apply this change to just this event or all upcoming
@@ -648,7 +661,8 @@ const GroupDisplay = () => {
                                 />
                                 <ScrollView>
                                     {pendingMembers.length > 0 && (
-                                        <Text style={styles.modalSectionLabel}>Pending Requests ({pendingMembers.length})</Text>
+                                        <Text style={styles.modalSectionLabel}>Pending Requests
+                                            ({pendingMembers.length})</Text>
                                     )}
                                     {filteredModalMembers
                                         .filter(m => m.inviteStatus === InviteStatus.pending)
@@ -658,7 +672,8 @@ const GroupDisplay = () => {
                                         .filter(m => m.inviteStatus !== InviteStatus.pending && m.id !== user.id)
                                         .map(renderMemberCard)}
                                 </ScrollView>
-                                <TouchableOpacity style={styles.closeButton} onPress={() => setMembersPanelOpened(false)}>
+                                <TouchableOpacity style={styles.closeButton}
+                                                  onPress={() => setMembersPanelOpened(false)}>
                                     <Text style={styles.closeButtonText}>Close</Text>
                                 </TouchableOpacity>
                             </View>
@@ -798,7 +813,8 @@ const GroupDisplay = () => {
                                         <Text style={styles.emptyText}>No pending invitations.</Text>
                                     )}
                                 </ScrollView>
-                                <TouchableOpacity style={styles.closeButton} onPress={() => setAllEventsPanelOpened(false)}>
+                                <TouchableOpacity style={styles.closeButton}
+                                                  onPress={() => setAllEventsPanelOpened(false)}>
                                     <Text style={styles.closeButtonText}>Close</Text>
                                 </TouchableOpacity>
                             </View>

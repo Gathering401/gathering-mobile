@@ -1,15 +1,15 @@
-import { Tabs } from 'expo-router';
-import { MaterialIcons } from '@expo/vector-icons';
+import {Tabs} from 'expo-router';
+import {MaterialIcons} from '@expo/vector-icons';
 
 export default function TabLayout() {
     return (
-        <Tabs screenOptions={{ headerShown: false, tabBarActiveTintColor: '#228be6' }}>
+        <Tabs screenOptions={{headerShown: false, tabBarActiveTintColor: '#228be6'}}>
             <Tabs.Screen
                 name="index"
                 options={{
                     title: 'Calendar',
-                    tabBarIcon: ({ color, size }) => (
-                        <MaterialIcons name="calendar-today" size={size} color={color} />
+                    tabBarIcon: ({color, size}) => (
+                        <MaterialIcons name="calendar-today" size={size} color={color}/>
                     )
                 }}
             />
@@ -17,8 +17,8 @@ export default function TabLayout() {
                 name="groups"
                 options={{
                     title: 'Groups',
-                    tabBarIcon: ({ color, size }) => (
-                        <MaterialIcons name="groups" size={size} color={color} />
+                    tabBarIcon: ({color, size}) => (
+                        <MaterialIcons name="groups" size={size} color={color}/>
                     )
                 }}
             />
@@ -26,8 +26,8 @@ export default function TabLayout() {
                 name="profile"
                 options={{
                     title: 'Profile',
-                    tabBarIcon: ({ color, size }) => (
-                        <MaterialIcons name="face" size={size} color={color} />
+                    tabBarIcon: ({color, size}) => (
+                        <MaterialIcons name="face" size={size} color={color}/>
                     )
                 }}
             />

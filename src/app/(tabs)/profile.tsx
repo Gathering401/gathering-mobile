@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import {useEffect, useState} from 'react';
 import * as SecureStore from 'expo-secure-store';
-import { View, Text, ActivityIndicator } from 'react-native';
+import {View, Text, ActivityIndicator} from 'react-native';
 import dayjs from 'dayjs';
-import { styles } from "../../styles/profile";
+import {styles} from "../../styles/profile";
 import {HeaderMenu} from "../../components/HeaderMenu";
 
 const Profile = () => {
@@ -20,7 +20,7 @@ const Profile = () => {
     if (!user) {
         return (
             <View style={styles.centered}>
-                <ActivityIndicator size="large" />
+                <ActivityIndicator size="large"/>
             </View>
         );
     }

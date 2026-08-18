@@ -57,7 +57,7 @@ const Main = () => {
     const [rsvpPickerEvent, setRsvpPickerEvent] = useState<CalendarEvent | null>(null);
     const [selectedInvitation, setSelectedInvitation] = useState<BusinessInvitation | null>(null);
 
-    const params = useLocalSearchParams<{invitationId?: string}>();
+    const params = useLocalSearchParams<{ invitationId?: string }>();
 
     const authHeader = useAuthHeader();
 
@@ -273,7 +273,8 @@ const Main = () => {
                     <Modal visible={!!rsvpPickerEvent} transparent animationType="slide">
                         <TouchableWithoutFeedback onPress={() => setRsvpPickerEvent(null)}>
                             <View style={styles.modalOverlay}>
-                                <TouchableWithoutFeedback onPress={() => {}}>
+                                <TouchableWithoutFeedback onPress={() => {
+                                }}>
                                     <View style={styles.modalContent}>
                                         <Text style={styles.modalTitle}>Update RSVP</Text>
                                         {rsvpOptions.map((opt: { label: string; value: string }) => (
@@ -306,10 +307,12 @@ const Main = () => {
                     <Modal visible={seriesPromptVisible} transparent animationType="fade">
                         <TouchableWithoutFeedback onPress={cancelSeriesPrompt}>
                             <View style={styles.modalOverlay}>
-                                <TouchableWithoutFeedback onPress={() => {}}>
+                                <TouchableWithoutFeedback onPress={() => {
+                                }}>
                                     <View style={styles.modalContent}>
                                         <Text style={styles.modalTitle}>Update RSVP</Text>
-                                        <Text style={styles.modalBody}>Apply this change to just this event or all upcoming
+                                        <Text style={styles.modalBody}>Apply this change to just this event or all
+                                            upcoming
                                             events in the series?</Text>
                                         <TouchableOpacity
                                             style={styles.modalButton}
@@ -321,7 +324,8 @@ const Main = () => {
                                             style={[styles.modalButton, styles.modalButtonPrimary]}
                                             onPress={() => confirmSeriesChoice(true)}
                                         >
-                                            <Text style={[styles.modalButtonText, {color: '#fff'}]}>All Upcoming Events</Text>
+                                            <Text style={[styles.modalButtonText, {color: '#fff'}]}>All Upcoming
+                                                Events</Text>
                                         </TouchableOpacity>
                                         <TouchableOpacity onPress={cancelSeriesPrompt}>
                                             <Text style={styles.modalCancel}>Cancel</Text>
@@ -334,7 +338,8 @@ const Main = () => {
                     <Modal visible={!!selectedInvitation} transparent animationType="slide">
                         <TouchableWithoutFeedback onPress={() => setSelectedInvitation(null)}>
                             <View style={styles.modalOverlay}>
-                                <TouchableWithoutFeedback onPress={() => {}}>
+                                <TouchableWithoutFeedback onPress={() => {
+                                }}>
                                     <View style={styles.modalContent}>
                                         <Text style={styles.cardGroupScroll}>
                                             {selectedInvitation?.businessName}
@@ -418,7 +423,8 @@ const Main = () => {
                                     <Text style={styles.cardTitle}>{invitation.eventName}</Text>
                                     <Text style={styles.cardGroup}>{invitation.groupName}</Text>
                                     <View style={styles.cardFooter}>
-                                        <Text style={styles.cardTime}>{dayjs(invitation.date).format('MMM D, h:mm A')}</Text>
+                                        <Text
+                                            style={styles.cardTime}>{dayjs(invitation.date).format('MMM D, h:mm A')}</Text>
                                         <TouchableOpacity
                                             style={[styles.rsvpPill, {backgroundColor: rsvpColor(invitation.rsvpStatus) + '22'}]}
                                             onPress={(e) => {
@@ -436,7 +442,8 @@ const Main = () => {
                                                 });
                                             }}
                                         >
-                                            <Text style={[styles.rsvpPillText, {color: rsvpColor(invitation.rsvpStatus)}]}>
+                                            <Text
+                                                style={[styles.rsvpPillText, {color: rsvpColor(invitation.rsvpStatus)}]}>
                                                 {getRsvpLabelFor(invitation.rsvpStatus)} ▾
                                             </Text>
                                         </TouchableOpacity>
@@ -459,7 +466,11 @@ const Main = () => {
                             {businessInvitations.map((invitation) => (
                                 <TouchableOpacity
                                     key={invitation.id}
-                                    style={[styles.card, {width: CARD_WIDTH, borderLeftWidth: 4, borderLeftColor: colors.sage.primary}]}
+                                    style={[styles.card, {
+                                        width: CARD_WIDTH,
+                                        borderLeftWidth: 4,
+                                        borderLeftColor: colors.sage.primary
+                                    }]}
                                     onPress={() => setSelectedInvitation(invitation)}
                                 >
                                     <Text style={styles.cardGroupScroll}>

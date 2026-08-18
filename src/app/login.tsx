@@ -24,7 +24,7 @@ const LogIn = () => {
             password: ''
         }
     });
-    const { registerPushToken } = usePushToken();
+    const {registerPushToken} = usePushToken();
 
     const onSubmit = async (values: LogInValues) => {
         setLoading(true);
@@ -110,6 +110,6 @@ const LogIn = () => {
             <Toast/>
         </KeyboardAvoidingView>
     );
-};
+}
 
 export default LogIn;

@@ -30,21 +30,24 @@ const ChangePassword = () => {
 
     const onSubmit = async (values: ChangePasswordValues) => {
         if (!passwordRegex.test(values.newPassword)) {
-            return Toast.show({type: 'error', text1: 'Password', text2: 'Minimum 8 characters, 1 number, 1 uppercase, 1 lowercase, 1 symbol'});
+            return Toast.show({
+                type: 'error',
+                text1: 'Password',
+                text2: 'Minimum 8 characters, 1 number, 1 uppercase, 1 lowercase, 1 symbol'
+            });
         }
         if (values.newPassword !== values.confirmPassword) {
             return Toast.show({type: 'error', text1: 'Confirm Password', text2: 'Passwords do not match'});
         }
 
         try {
-            const headers = await authHeader();
             const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/password`, {
                 body: JSON.stringify({
                     currentPassword: values.currentPassword,
                     newPassword: values.newPassword
                 }),
                 method: 'PUT',
-                headers: {'Content-Type': 'application/json', ...headers}
+                headers: {'Content-Type': 'application/json', ...authHeader}
             });
 
             const data = await response.json();

@@ -1,7 +1,7 @@
 import {useEffect, useState} from 'react';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import {useRouter, useLocalSearchParams} from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
-import { useForm, Controller } from 'react-hook-form';
+import {useForm, Controller} from 'react-hook-form';
 import Toast from 'react-native-toast-message';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import _ from 'lodash';
@@ -49,7 +49,7 @@ const SignUp = () => {
     const params = useLocalSearchParams();
     const [loading, setLoading] = useState(false);
     const [showDatePicker, setShowDatePicker] = useState(false);
-    const { registerPushToken } = usePushToken();
+    const {registerPushToken} = usePushToken();
 
     const isEdit = params.isEdit === 'true';
     const [token, setToken] = useState<string | null>(null);
@@ -57,7 +57,7 @@ const SignUp = () => {
         SecureStore.getItemAsync('token').then(setToken);
     }, []);
 
-    const { control, handleSubmit } = useForm<SignUpValues>({
+    const {control, handleSubmit} = useForm<SignUpValues>({
         defaultValues: {
             username: (params.username as string) ?? '',
             email: (params.email as string) ?? '',
@@ -73,31 +73,35 @@ const SignUp = () => {
 
     const onSubmit = async (values: SignUpValues) => {
         if (!emailRegex.test(values.email)) {
-            return Toast.show({ type: 'error', text1: 'Email', text2: 'Invalid email address' });
+            return Toast.show({type: 'error', text1: 'Email', text2: 'Invalid email address'});
         }
         if (!nameRegex.test(values.firstName)) {
-            return Toast.show({ type: 'error', text1: 'First Name', text2: 'Invalid first name' });
+            return Toast.show({type: 'error', text1: 'First Name', text2: 'Invalid first name'});
         }
         if (!nameRegex.test(values.lastName)) {
-            return Toast.show({ type: 'error', text1: 'Last Name', text2: 'Invalid last name' });
+            return Toast.show({type: 'error', text1: 'Last Name', text2: 'Invalid last name'});
         }
         if (!values.birthdate) {
-            return Toast.show({ type: 'error', text1: 'Birthdate', text2: 'Birthdate is required' });
+            return Toast.show({type: 'error', text1: 'Birthdate', text2: 'Birthdate is required'});
         }
         if (dayjs().diff(dayjs(values.birthdate), 'years') < 13) {
-            return Toast.show({ type: 'error', text1: 'Birthdate', text2: 'Must be older than 13 to sign up' });
+            return Toast.show({type: 'error', text1: 'Birthdate', text2: 'Must be older than 13 to sign up'});
         }
         if (!phoneRegex.test(values.phone)) {
-            return Toast.show({ type: 'error', text1: 'Phone', text2: 'Format must be ###-###-####' });
+            return Toast.show({type: 'error', text1: 'Phone', text2: 'Format must be ###-###-####'});
         }
         if (!zipCodeRegex.test(values.zipCode)) {
-            return Toast.show({ type: 'error', text1: 'Zip Code', text2: 'Please enter a valid 5 digit zip code' });
+            return Toast.show({type: 'error', text1: 'Zip Code', text2: 'Please enter a valid 5 digit zip code'});
         }
         if (!isEdit && !passwordRegex.test(values.password)) {
-            return Toast.show({ type: 'error', text1: 'Password', text2: 'Minimum 8 characters, 1 number, 1 uppercase, 1 lowercase, 1 symbol' });
+            return Toast.show({
+                type: 'error',
+                text1: 'Password',
+                text2: 'Minimum 8 characters, 1 number, 1 uppercase, 1 lowercase, 1 symbol'
+            });
         }
         if (!isEdit && values.password !== values.confirmPassword) {
-            return Toast.show({ type: 'error', text1: 'Confirm Password', text2: 'Passwords do not match' });
+            return Toast.show({type: 'error', text1: 'Confirm Password', text2: 'Passwords do not match'});
         }
 
         setLoading(true);
@@ -116,7 +120,7 @@ const SignUp = () => {
                 method,
                 headers: {
                     'Content-Type': 'application/json',
-                    ...(isEdit && token ? { 'Authorization': `Bearer ${token}` } : {})
+                    ...(isEdit && token ? {'Authorization': `Bearer ${token}`} : {})
                 }
             });
 
@@ -130,14 +134,14 @@ const SignUp = () => {
                 } else {
                     const current = await SecureStore.getItemAsync('user');
                     const currentUser = current ? JSON.parse(current) : {};
-                    await SecureStore.setItemAsync('user', JSON.stringify({ ...currentUser, ...body }));
+                    await SecureStore.setItemAsync('user', JSON.stringify({...currentUser, ...body}));
                 }
                 router.replace(isEdit ? '/profile' : '/');
             } else {
-                Toast.show({ type: 'error', text1: 'Error', text2: 'Something went wrong. Please try again.' });
+                Toast.show({type: 'error', text1: 'Error', text2: 'Something went wrong. Please try again.'});
             }
         } catch {
-            Toast.show({ type: 'error', text1: 'Error', text2: 'Something went wrong. Please try again.' });
+            Toast.show({type: 'error', text1: 'Error', text2: 'Something went wrong. Please try again.'});
         } finally {
             setLoading(false);
         }
@@ -148,7 +152,7 @@ const SignUp = () => {
             key={field}
             control={control}
             name={field}
-            render={({ field: { onChange, value } }) => (
+            render={({field: {onChange, value}}) => (
                 <View>
                     <Text style={styles.label}>{_.startCase(field)} <Text style={styles.required}>*</Text></Text>
                     <TextInput
@@ -172,7 +176,7 @@ const SignUp = () => {
 
     return (
         <KeyboardAvoidingView
-            style={{ flex: 1 }}
+            style={{flex: 1}}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
             <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -193,7 +197,7 @@ const SignUp = () => {
                     <Controller
                         control={control}
                         name="birthdate"
-                        render={({ field: { onChange, value } }) => (
+                        render={({field: {onChange, value}}) => (
                             <View style={styles.fieldContainer}>
                                 <Text style={styles.label}>Birthdate <Text style={styles.required}>*</Text></Text>
                                 <TouchableOpacity
@@ -201,7 +205,10 @@ const SignUp = () => {
                                     onPress={() => !isEdit && setShowDatePicker(true)}
                                     disabled={isEdit}
                                 >
-                                    <Text style={{ fontSize: 16, color: value ? (isEdit ? colors.terracotta.secondary : colors.terracotta.text) : colors.sage.secondary }}>
+                                    <Text style={{
+                                        fontSize: 16,
+                                        color: value ? (isEdit ? colors.terracotta.secondary : colors.terracotta.text) : colors.sage.secondary
+                                    }}>
                                         {value ? dayjs(value).format('MM/DD/YYYY') : 'Select your birthdate'}
                                     </Text>
                                 </TouchableOpacity>
@@ -238,9 +245,10 @@ const SignUp = () => {
                             <Controller
                                 control={control}
                                 name="password"
-                                render={({ field: { onChange, value } }) => (
+                                render={({field: {onChange, value}}) => (
                                     <View style={styles.fieldContainer}>
-                                        <Text style={styles.label}>Password <Text style={styles.required}>*</Text></Text>
+                                        <Text style={styles.label}>Password <Text
+                                            style={styles.required}>*</Text></Text>
                                         <TextInput
                                             style={styles.input}
                                             placeholder="Password"
@@ -254,9 +262,10 @@ const SignUp = () => {
                             <Controller
                                 control={control}
                                 name="confirmPassword"
-                                render={({ field: { onChange, value } }) => (
+                                render={({field: {onChange, value}}) => (
                                     <View style={styles.fieldContainer}>
-                                        <Text style={styles.label}>Confirm Password <Text style={styles.required}>*</Text></Text>
+                                        <Text style={styles.label}>Confirm Password <Text
+                                            style={styles.required}>*</Text></Text>
                                         <TextInput
                                             style={styles.input}
                                             placeholder="Confirm Password"
@@ -290,7 +299,7 @@ const SignUp = () => {
                             <Text style={styles.link}>Already have an account? Log in here</Text>
                         </TouchableOpacity>
                     )}
-                    <Toast />
+                    <Toast/>
                 </ScrollView>
             </TouchableWithoutFeedback>
         </KeyboardAvoidingView>

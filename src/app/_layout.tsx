@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Stack, useRouter, useSegments } from 'expo-router';
+import {useEffect, useState} from 'react';
+import {Stack, useRouter, useSegments} from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import * as Notifications from 'expo-notifications';
 import {View, ActivityIndicator, TouchableOpacity} from 'react-native';
@@ -9,6 +9,7 @@ import {colors} from "../styles/colors";
 import {styles} from "../styles/layout";
 import {HeaderMenu} from "../components/HeaderMenu";
 import {GatheringGroup} from "../constants/GatheringGroup";
+import {NotificationBehavior} from "expo-notifications";
 
 const queryClient = new QueryClient();
 
@@ -17,13 +18,13 @@ Notifications.setNotificationHandler({
         shouldShowAlert: true,
         shouldPlaySound: true,
         shouldSetBadge: false,
-    }),
+    } as NotificationBehavior),
 });
 
 export default function RootLayout() {
     return (
         <QueryClientProvider client={queryClient}>
-            <RootLayoutNav />
+            <RootLayoutNav/>
         </QueryClientProvider>
     );
 }
@@ -56,7 +57,7 @@ function RootLayoutNav() {
 
             try {
                 const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/profile`, {
-                    headers: { Authorization: `Bearer ${storedToken}` }
+                    headers: {Authorization: `Bearer ${storedToken}`}
                 });
 
                 if (!response.ok) {
@@ -79,7 +80,7 @@ function RootLayoutNav() {
         void checkAuth();
     }, [segments]);
 
-    const { data: creatableGroups = [] } = useQuery<GatheringGroup[]>({
+    const {data: creatableGroups = []} = useQuery<GatheringGroup[]>({
         queryKey: ['group-creatable'],
         enabled: !!token,
         queryFn: async () => {
@@ -161,7 +162,7 @@ function RootLayoutNav() {
     if (!isReady) {
         return (
             <View style={styles.loader}>
-                <ActivityIndicator size="large" />
+                <ActivityIndicator size="large"/>
             </View>
         );
     }
@@ -170,7 +171,7 @@ function RootLayoutNav() {
         <Stack>
             <Stack.Screen
                 name="(tabs)"
-                options={({ navigation }) => {
+                options={({navigation}) => {
                     const rootState = navigation.getState();
                     const tabsRoute = rootState?.routes[rootState.index];
                     const nestedTabState = tabsRoute?.state;
@@ -190,7 +191,7 @@ function RootLayoutNav() {
                                         onPress={() => router.push('/new-event')}
                                         style={styles.newEvent}
                                     >
-                                        <Ionicons name="add" size={20} color={colors.terracotta.primary} />
+                                        <Ionicons name="add" size={20} color={colors.terracotta.primary}/>
                                     </TouchableOpacity>
                                 );
                             }
@@ -201,7 +202,7 @@ function RootLayoutNav() {
                                         onPress={() => router.push('/new-group')}
                                         style={styles.newEvent}
                                     >
-                                        <Ionicons name="add" size={20} color={colors.terracotta.primary} />
+                                        <Ionicons name="add" size={20} color={colors.terracotta.primary}/>
                                     </TouchableOpacity>
                                 );
                             }
@@ -210,8 +211,8 @@ function RootLayoutNav() {
                                 return (
                                     <HeaderMenu
                                         items={[
-                                            { key: 'edit', title: 'Edit Account', onSelect: handleEditAccount },
-                                            { key: 'logout', title: 'Logout', destructive: true, onSelect: handleLogout },
+                                            {key: 'edit', title: 'Edit Account', onSelect: handleEditAccount},
+                                            {key: 'logout', title: 'Logout', destructive: true, onSelect: handleLogout},
                                         ]}
                                     />
                                 );
@@ -222,12 +223,12 @@ function RootLayoutNav() {
                     }
                 }}
             />
-            <Stack.Screen name="new-group" options={{ headerShown: false }} />
-            <Stack.Screen name="signup" options={{ headerShown: false }} />
-            <Stack.Screen name="login" options={{ headerShown: false }} />
-            <Stack.Screen name="forgot-password" options={{ headerShown: false }} />
-            <Stack.Screen name="reset-password" options={{ headerShown: false }} />
-            <Stack.Screen name="new-event" options={{ headerShown: false }} />
+            <Stack.Screen name="new-group" options={{headerShown: false}}/>
+            <Stack.Screen name="signup" options={{headerShown: false}}/>
+            <Stack.Screen name="login" options={{headerShown: false}}/>
+            <Stack.Screen name="forgot-password" options={{headerShown: false}}/>
+            <Stack.Screen name="reset-password" options={{headerShown: false}}/>
+            <Stack.Screen name="new-event" options={{headerShown: false}}/>
             <Stack.Screen
                 name="change-password"
                 options={{

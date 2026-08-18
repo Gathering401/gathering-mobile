@@ -244,20 +244,23 @@ const EventDisplay = () => {
                             size={17}
                             color={event.myNotifications ? '#fff' : colors.terracotta.primary}
                         />
-                        <Text style={[styles.actionButtonLabel, event.myNotifications && styles.actionButtonLabelActive]}>Notify</Text>
+                        <Text
+                            style={[styles.actionButtonLabel, event.myNotifications && styles.actionButtonLabelActive]}>Notify</Text>
                     </TouchableOpacity>
                 </View>
                 <View style={styles.infoCard}>
                     <Text style={styles.cardLabel}>What's happening?</Text>
                     <Text style={styles.cardValue}>{event.description}</Text>
                     <Text style={styles.cardLabel}>Price</Text>
-                    <Text style={[styles.cardValue, (myRsvp !== Rsvp.pending && myRsvp !== Rsvp.rejected) && {marginBottom: 0}]}>
+                    <Text
+                        style={[styles.cardValue, (myRsvp !== Rsvp.pending && myRsvp !== Rsvp.rejected) && {marginBottom: 0}]}>
                         {Number(event.cost) > 0 ? `$${Number(event.cost).toFixed(2)}` : 'Free'}
                     </Text>
                     {(myRsvp === Rsvp.pending || myRsvp === Rsvp.rejected) && (
                         <>
                             <Text style={styles.cardLabel}>How often</Text>
-                            <Text style={[styles.cardValue, {marginBottom: 0}]}>{getRepetitionLabel(event.repetition)}</Text>
+                            <Text
+                                style={[styles.cardValue, {marginBottom: 0}]}>{getRepetitionLabel(event.repetition)}</Text>
                         </>
                     )}
                 </View>
@@ -274,7 +277,8 @@ const EventDisplay = () => {
                 <Modal visible={showRsvpPicker} transparent animationType="slide">
                     <TouchableWithoutFeedback onPress={() => setShowRsvpPicker(false)}>
                         <View style={styles.modalOverlay}>
-                            <TouchableWithoutFeedback onPress={() => {}}>
+                            <TouchableWithoutFeedback onPress={() => {
+                            }}>
                                 <View style={styles.modalContent}>
                                     <Text style={styles.modalTitle}>Update RSVP</Text>
                                     {rsvpOptions.map((opt: { label: string; value: string }) => (
@@ -302,7 +306,8 @@ const EventDisplay = () => {
                 <Modal visible={editModalOpened} transparent animationType="slide">
                     <TouchableWithoutFeedback onPress={() => setEditModalOpened(false)}>
                         <View style={styles.modalOverlay}>
-                            <TouchableWithoutFeedback onPress={() => {}}>
+                            <TouchableWithoutFeedback onPress={() => {
+                            }}>
                                 <View style={styles.modalContent}>
                                     <Text style={styles.modalTitle}>Edit Event</Text>
                                     <Text style={styles.modalBody}>Would you like to edit the series or just this single
@@ -384,10 +389,12 @@ const EventDisplay = () => {
                     </View>
                 </Modal>
                 {isHost && (
-                    <Modal visible={guestListOpened} transparent animationType="slide" onRequestClose={() => setGuestListOpened(false)}>
+                    <Modal visible={guestListOpened} transparent animationType="slide"
+                           onRequestClose={() => setGuestListOpened(false)}>
                         <TouchableWithoutFeedback onPress={() => setGuestListOpened(false)}>
                             <View style={styles.modalOverlay}>
-                                <TouchableWithoutFeedback onPress={() => {}}>
+                                <TouchableWithoutFeedback onPress={() => {
+                                }}>
                                     <View style={styles.guestModalContent}>
                                         <View style={styles.guestModalHeader}>
                                             <Text style={styles.modalTitle}>Guest List</Text>
@@ -399,8 +406,10 @@ const EventDisplay = () => {
                                             {sortedRsvps.map(r => (
                                                 <View key={r.userId} style={styles.guestRow}>
                                                     <Text>{r.fullName} ({r.username})</Text>
-                                                    <View style={[styles.rsvpBadge, {backgroundColor: rsvpColor(r.rsvp) + '22'}]}>
-                                                        <Text style={[styles.rsvpBadgeText, {color: rsvpColor(r.rsvp)}]}>
+                                                    <View
+                                                        style={[styles.rsvpBadge, {backgroundColor: rsvpColor(r.rsvp) + '22'}]}>
+                                                        <Text
+                                                            style={[styles.rsvpBadgeText, {color: rsvpColor(r.rsvp)}]}>
                                                             {getRsvpLabelFor(r.rsvp)}
                                                         </Text>
                                                     </View>
@@ -416,7 +425,8 @@ const EventDisplay = () => {
                 <Modal visible={showSeriesModal} transparent animationType="fade">
                     <TouchableWithoutFeedback onPress={() => setShowSeriesModal(false)}>
                         <View style={styles.seriesModalOverlay}>
-                            <TouchableWithoutFeedback onPress={() => {}}>
+                            <TouchableWithoutFeedback onPress={() => {
+                            }}>
                                 <View style={styles.seriesModalContent}>
                                     <Text style={styles.modalTitle}>Upcoming Dates</Text>
                                     <ScrollView>
@@ -440,7 +450,8 @@ const EventDisplay = () => {
                 <Modal visible={seriesPromptVisible} transparent animationType="fade">
                     <TouchableWithoutFeedback onPress={cancelSeriesPrompt}>
                         <View style={styles.modalOverlay}>
-                            <TouchableWithoutFeedback onPress={() => {}}>
+                            <TouchableWithoutFeedback onPress={() => {
+                            }}>
                                 <View style={styles.modalContent}>
                                     <Text style={styles.modalTitle}>Update RSVP</Text>
                                     <Text style={styles.modalBody}>Apply this change to just this event or all upcoming
@@ -455,7 +466,8 @@ const EventDisplay = () => {
                                         style={[styles.modalButton, styles.modalButtonPrimary]}
                                         onPress={() => confirmSeriesChoice(true)}
                                     >
-                                        <Text style={[styles.modalButtonText, {color: '#fff'}]}>All Upcoming Events</Text>
+                                        <Text style={[styles.modalButtonText, {color: '#fff'}]}>All Upcoming
+                                            Events</Text>
                                     </TouchableOpacity>
                                     <TouchableOpacity onPress={cancelSeriesPrompt}>
                                         <Text style={styles.modalCancel}>Cancel</Text>
