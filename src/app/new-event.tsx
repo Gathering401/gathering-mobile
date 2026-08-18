@@ -241,7 +241,7 @@ const EventForm = () => {
         if (!values.date) {
             return Toast.show({type: 'error', text1: 'Date', text2: 'Please select a date'});
         }
-        if (dayjs(values.date).isBefore(dayjs().add(1, 'day'))) {
+        if (dayjs(values.date).isBefore(dayjs().startOf('day').add(1, 'day'))) {
             return Toast.show({type: 'error', text1: 'Date', text2: 'Event date must be in the future'});
         }
         submitEvent(values);

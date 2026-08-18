@@ -143,7 +143,9 @@ const GroupDisplay = () => {
                 method: 'PUT',
                 headers: authHeader
             });
-            if (response.status === 204) await refetch();
+            if (response.status === 204) {
+                await refetch();
+            }
         }
     });
 
@@ -153,7 +155,9 @@ const GroupDisplay = () => {
                 method: 'DELETE',
                 headers: authHeader
             });
-            if (response.status !== 204) throw new Error('Failed to delete group');
+            if (response.status !== 204) {
+                throw new Error('Failed to delete group');
+            }
         },
         onSuccess: () => router.replace('/(tabs)/groups')
     });
