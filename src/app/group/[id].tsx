@@ -6,7 +6,7 @@ import {useMutation, useQuery, useQueryClient, UseQueryResult} from '@tanstack/r
 import {
     View, Text, TouchableOpacity, ScrollView,
     ActivityIndicator, TextInput, Modal, Alert,
-    Keyboard, TouchableWithoutFeedback
+    Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform
 } from 'react-native';
 import {Ionicons, Feather} from '@expo/vector-icons';
 import {GatheringGroup} from '../../constants/GatheringGroup';
@@ -652,38 +652,53 @@ const GroupDisplay = () => {
             </Modal>
             <Modal visible={membersPanelOpened} transparent animationType="slide"
                    onRequestClose={() => setMembersPanelOpened(false)}>
-                <TouchableWithoutFeedback onPress={() => setMembersPanelOpened(false)}>
-                    <View style={styles.modalOverlay}>
-                        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                            <View style={styles.modalContent}>
-                                <Text style={styles.modalTitle}>All Members</Text>
-                                <TextInput
-                                    style={styles.searchInput}
-                                    placeholder="Search members..."
-                                    value={searchMembers}
-                                    onChangeText={setSearchMembers}
-                                />
-                                <ScrollView>
-                                    {pendingMembers.length > 0 && (
-                                        <Text style={styles.modalSectionLabel}>Pending Requests
-                                            ({pendingMembers.length})</Text>
-                                    )}
-                                    {filteredModalMembers
-                                        .filter(m => m.inviteStatus === InviteStatus.pending)
-                                        .map(renderMemberCard)}
-                                    <Text style={styles.modalSectionLabel}>Members</Text>
-                                    {filteredModalMembers
-                                        .filter(m => m.inviteStatus !== InviteStatus.pending && m.id !== user.id)
-                                        .map(renderMemberCard)}
-                                </ScrollView>
-                                <TouchableOpacity style={styles.closeButton}
-                                                  onPress={() => setMembersPanelOpened(false)}>
-                                    <Text style={styles.closeButtonText}>Close</Text>
-                                </TouchableOpacity>
-                            </View>
-                        </TouchableWithoutFeedback>
-                    </View>
-                </TouchableWithoutFeedback>
+                <KeyboardAvoidingView
+                    style={{flex: 1}}
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                >
+                    <TouchableWithoutFeedback onPress={() => setMembersPanelOpened(false)}>
+                        <View style={styles.modalOverlay}>
+                            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                                <View style={styles.modalContent}>
+                                    <Text style={styles.modalTitle}>All Members</Text>
+                                    <ScrollView>
+                                        {pendingMembers.length > 0 && (
+                                            <Text style={styles.modalSectionLabel}>Pending Requests
+                                                ({pendingMembers.length})</Text>
+                                        )}
+                                        {filteredModalMembers
+                                            .filter(m => m.inviteStatus === InviteStatus.pending)
+                                            .map(renderMemberCard)}
+                                        <Text style={styles.modalSectionLabel}>Members</Text>
+                                        {filteredModalMembers
+                                            .filter(m => m.inviteStatus !== InviteStatus.pending && m.id !== user.id)
+                                            .map(renderMemberCard)}
+                                    </ScrollView>
+                                    <View style={{position: 'relative', marginBottom: 12}}>
+                                        <TextInput
+                                            style={[styles.searchInput, {paddingRight: 36, marginBottom: 0}]}
+                                            placeholder="Search members..."
+                                            value={searchMembers}
+                                            onChangeText={setSearchMembers}
+                                        />
+                                        {!!searchMembers && (
+                                            <TouchableOpacity
+                                                style={{position: 'absolute', right: 10, top: 0, bottom: 0, justifyContent: 'center'}}
+                                                onPress={() => setSearchMembers('')}
+                                            >
+                                                <Ionicons name="close-circle" size={18} color={colors.terracotta.text}/>
+                                            </TouchableOpacity>
+                                        )}
+                                    </View>
+                                    <TouchableOpacity style={styles.closeButton}
+                                                      onPress={() => setMembersPanelOpened(false)}>
+                                        <Text style={styles.closeButtonText}>Close</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </TouchableWithoutFeedback>
+                        </View>
+                    </TouchableWithoutFeedback>
+                </KeyboardAvoidingView>
             </Modal>
             <Modal
                 visible={invitePanelOpened}
@@ -699,14 +714,24 @@ const GroupDisplay = () => {
                                 <Ionicons name="close" size={24} color={colors.terracotta.text}/>
                             </TouchableOpacity>
                         </View>
-                        <TextInput
-                            style={styles.searchInput}
-                            placeholder="Search by username..."
-                            value={searchInvite}
-                            onChangeText={setSearchInvite}
-                            autoCorrect={false}
-                            autoCapitalize="none"
-                        />
+                        <View style={{position: 'relative', marginBottom: 12}}>
+                            <TextInput
+                                style={[styles.searchInput, {paddingRight: 36, marginBottom: 0}]}
+                                placeholder="Search by username..."
+                                value={searchInvite}
+                                onChangeText={setSearchInvite}
+                                autoCorrect={false}
+                                autoCapitalize="none"
+                            />
+                            {!!searchInvite && (
+                                <TouchableOpacity
+                                    style={{position: 'absolute', right: 12, top: 0, bottom: 0, justifyContent: 'center'}}
+                                    onPress={() => setSearchInvite('')}
+                                >
+                                    <Ionicons name="close-circle" size={18} color={colors.terracotta.text}/>
+                                </TouchableOpacity>
+                            )}
+                        </View>
                         <ScrollView>
                             {loadingSearch && <ActivityIndicator style={{marginVertical: 8}}/>}
                             {!loadingSearch && searchResults?.map((u: {

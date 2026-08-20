@@ -61,11 +61,15 @@ const GroupForm = () => {
 
         if (data.success) {
             await queryClient.invalidateQueries({queryKey: ['groups-my']});
-            router.replace(isEditing ? `/group/${params.id}` : `/group/${data.response.id}`);
+            if (isEditing) {
+                router.back();
+            } else {
+                router.replace(`/group/${data.response.id}`);
+            }
         } else {
             Toast.show({type: 'error', text1: 'Error', text2: 'Something went wrong. Please try again.'});
         }
-    };
+    }
 
     return (
         <KeyboardAvoidingView

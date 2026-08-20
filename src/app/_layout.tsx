@@ -103,7 +103,7 @@ function RootLayoutNav() {
         const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
             const invitationId = response.notification.request.content.data?.invitationId;
             if (invitationId) {
-                router.push({
+                router.replace({
                     pathname: '/(tabs)',
                     params: {invitationId: String(invitationId)}
                 });
@@ -123,7 +123,7 @@ function RootLayoutNav() {
             const invitationId = response.notification.request.content.data?.invitationId;
             if (invitationId) {
                 setTimeout(() => {
-                    router.push({
+                    router.replace({
                         pathname: '/(tabs)',
                         params: {invitationId: String(invitationId)}
                     });

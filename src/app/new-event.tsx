@@ -198,17 +198,21 @@ const EventForm = () => {
                 await queryClient.invalidateQueries({queryKey: [`eventId-${params.id}`]});
                 await queryClient.invalidateQueries({queryKey: [`groupId-${groupId}`]});
                 await queryClient.invalidateQueries({queryKey: ['events']});
+                if (businessInvitationId) {
+                    await queryClient.invalidateQueries({queryKey: ['activeInvitations']});
+                }
+                router.back();
             } else {
                 await queryClient.invalidateQueries({queryKey: [`groupId-${groupId}`]});
                 await queryClient.invalidateQueries({queryKey: ['events']});
+                if (businessInvitationId) {
+                    await queryClient.invalidateQueries({queryKey: ['activeInvitations']});
+                }
+                router.replace({
+                    pathname: `/event/${data.response.id}`,
+                    params: {groupId: String(groupId)}
+                });
             }
-            if (businessInvitationId) {
-                await queryClient.invalidateQueries({queryKey: ['activeInvitations']});
-            }
-            router.replace({
-                pathname: isEditing ? `/event/${params.id}` : `/event/${data.response.id}`,
-                params: {groupId: String(groupId)}
-            });
         },
         onError: () => {
             Toast.show({type: 'error', text1: 'Error', text2: 'Something went wrong. Please try again.'});

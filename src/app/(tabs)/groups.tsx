@@ -4,12 +4,14 @@ import * as SecureStore from 'expo-secure-store';
 import {useQuery, useQueryClient} from '@tanstack/react-query';
 import {
     View, Text, TextInput, ScrollView, ActivityIndicator,
-    RefreshControl, KeyboardAvoidingView, Platform, Keyboard
+    RefreshControl, KeyboardAvoidingView, Platform, Keyboard, TouchableOpacity
 } from 'react-native';
 import {GatheringGroup} from '../../constants/GatheringGroup';
 import GroupCard from "../../components/GroupCard";
 import {styles} from "../../styles/groups";
 import {useHeaderHeight} from '@react-navigation/elements';
+import {Ionicons} from "@expo/vector-icons";
+import {colors} from "../../styles/colors";
 
 const Groups = () => {
     const router = useRouter();
@@ -168,12 +170,22 @@ const Groups = () => {
                 )}
             </ScrollView>
             <View style={styles.searchBar}>
-                <TextInput
-                    style={styles.searchInput}
-                    placeholder="Search groups..."
-                    value={search}
-                    onChangeText={setSearch}
-                />
+                <View style={{position: 'relative'}}>
+                    <TextInput
+                        style={[styles.searchInput, {paddingRight: 36}]}
+                        placeholder="Search groups..."
+                        value={search}
+                        onChangeText={setSearch}
+                    />
+                    {!!search && (
+                        <TouchableOpacity
+                            style={{position: 'absolute', right: 10, top: 0, bottom: 0, justifyContent: 'center'}}
+                            onPress={() => setSearch('')}
+                        >
+                            <Ionicons name="close-circle" size={18} color={colors.terracotta.text}/>
+                        </TouchableOpacity>
+                    )}
+                </View>
             </View>
         </KeyboardAvoidingView>
     );
