@@ -24,4 +24,8 @@ export const styles = StyleSheet.create({
         backgroundColor: colors.terracotta.lightFill,
         color: colors.terracotta.secondary
     },
+    secondaryButton: {borderWidth: 1, borderColor: colors.terracotta.primary, borderRadius: 8, padding: 12, alignItems: 'center', backgroundColor: 'transparent', marginTop: 8},
+    secondaryButtonText: {color: colors.terracotta.primary, fontSize: 16, fontWeight: '600'},
+    modalOverlay: {flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end'},
+    modalContent: {backgroundColor: '#fff', borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 24},
 });

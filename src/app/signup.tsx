@@ -2,13 +2,13 @@ import {useEffect, useState} from 'react';
 import {useRouter, useLocalSearchParams} from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import {useForm, Controller} from 'react-hook-form';
-import Toast from 'react-native-toast-message';
+import Toast, {BaseToast, ErrorToast} from 'react-native-toast-message';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import _ from 'lodash';
 import dayjs from 'dayjs';
 import {
     View, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, Keyboard,
-    KeyboardAvoidingView, Platform, ScrollView
+    KeyboardAvoidingView, Platform, ScrollView, Modal
 } from 'react-native';
 import {styles} from "../styles/signup";
 import {colors} from "../styles/colors";
@@ -29,13 +29,31 @@ interface SignUpValues {
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 const emailRegex = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
 const nameRegex = /^[a-z ,.'-]{2,64}$/i;
+const usernameRegex = /^[a-zA-Z0-9_.]{3,50}$/;
 const phoneRegex = /^\d{3}-\d{3}-\d{4}$/;
 const zipCodeRegex = /^\d{5}$/;
 
 const nameFields = ['username', 'firstName', 'lastName'];
 const capitalizeFirstOnly = ['firstName', 'lastName'];
+const maxLengths: Record<string, number> = {
+    username: 50,
+    firstName: 64,
+    lastName: 64,
+    email: 254,
+    phone: 12,
+    zipCode: 5
+};
 
 const datePickerFallback = dayjs().subtract(13, 'years').toDate();
+
+const toastConfig = {
+    error: (props: any) => (
+        <ErrorToast {...props} text1NumberOfLines={2} text2NumberOfLines={0}/>
+    ),
+    success: (props: any) => (
+        <BaseToast {...props} text1NumberOfLines={2} text2NumberOfLines={0}/>
+    )
+};
 
 const formatPhone = (value: string) => {
     const digits = value.replace(/\D/g, '').slice(0, 10);
@@ -72,6 +90,13 @@ const SignUp = () => {
     });
 
     const onSubmit = async (values: SignUpValues) => {
+        if (!usernameRegex.test(values.username)) {
+            return Toast.show({
+                type: 'error',
+                text1: 'Username',
+                text2: 'Username must be 3-50 characters and may only contain letters, numbers, underscores, and periods'
+            });
+        }
         if (!emailRegex.test(values.email)) {
             return Toast.show({type: 'error', text1: 'Email', text2: 'Invalid email address'});
         }
@@ -138,7 +163,7 @@ const SignUp = () => {
                 }
                 router.replace(isEdit ? '/profile' : '/');
             } else {
-                Toast.show({type: 'error', text1: 'Error', text2: 'Something went wrong. Please try again.'});
+                Toast.show({type: 'error', text1: 'Error', text2: data.error || 'Something went wrong. Please try again.'});
             }
         } catch {
             Toast.show({type: 'error', text1: 'Error', text2: 'Something went wrong. Please try again.'});
@@ -167,7 +192,7 @@ const SignUp = () => {
                         editable={!disabled}
                         value={value}
                         onChangeText={field === 'phone' ? (v) => onChange(formatPhone(v)) : onChange}
-                        maxLength={field === 'phone' ? 12 : field === 'zipCode' ? 5 : undefined}
+                        maxLength={maxLengths[field]}
                     />
                 </View>
             )}
@@ -212,24 +237,42 @@ const SignUp = () => {
                                         {value ? dayjs(value).format('MM/DD/YYYY') : 'Select your birthdate'}
                                     </Text>
                                 </TouchableOpacity>
-                                {showDatePicker && (
-                                    <>
-                                        <DateTimePicker
-                                            value={value ?? datePickerFallback}
-                                            mode="date"
-                                            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                                            maximumDate={dayjs().subtract(13, 'years').toDate()}
-                                            onChange={(_, date) => {
-                                                setShowDatePicker(Platform.OS === 'ios');
-                                                if (date) onChange(date);
-                                            }}
-                                        />
-                                        {Platform.OS === 'ios' && (
-                                            <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                                                <Text style={styles.link}>Done</Text>
-                                            </TouchableOpacity>
-                                        )}
-                                    </>
+                                {showDatePicker && Platform.OS === 'ios' && (
+                                    <Modal visible={showDatePicker} transparent animationType="slide">
+                                        <TouchableWithoutFeedback onPress={() => setShowDatePicker(false)}>
+                                            <View style={styles.modalOverlay}>
+                                                <TouchableWithoutFeedback>
+                                                    <View style={styles.modalContent}>
+                                                        <DateTimePicker
+                                                            value={value ?? datePickerFallback}
+                                                            mode="date"
+                                                            display="spinner"
+                                                            onChange={(_, date) => {
+                                                                if (date) onChange(date);
+                                                            }}
+                                                        />
+                                                        <TouchableOpacity
+                                                            style={styles.secondaryButton}
+                                                            onPress={() => setShowDatePicker(false)}
+                                                        >
+                                                            <Text style={styles.secondaryButtonText}>Done</Text>
+                                                        </TouchableOpacity>
+                                                    </View>
+                                                </TouchableWithoutFeedback>
+                                            </View>
+                                        </TouchableWithoutFeedback>
+                                    </Modal>
+                                )}
+                                {showDatePicker && Platform.OS !== 'ios' && (
+                                    <DateTimePicker
+                                        value={value ?? datePickerFallback}
+                                        mode="date"
+                                        display="default"
+                                        onChange={(_, date) => {
+                                            setShowDatePicker(false);
+                                            if (date) onChange(date);
+                                        }}
+                                    />
                                 )}
                             </View>
                         )}
@@ -299,7 +342,7 @@ const SignUp = () => {
                             <Text style={styles.link}>Already have an account? Log in here</Text>
                         </TouchableOpacity>
                     )}
-                    <Toast/>
+                    <Toast config={toastConfig}/>
                 </ScrollView>
             </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
