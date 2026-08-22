@@ -407,10 +407,10 @@ const GroupDisplay = () => {
                                         <Text style={styles.buttonText}>Accept</Text>
                                     </TouchableOpacity>
                                     <TouchableOpacity
-                                        style={styles.removeButton}
+                                        style={styles.declineButton}
                                         onPress={() => respondToRequest({userId: m.id, accepted: false})}
                                     >
-                                        <Text style={styles.removeText}>Decline</Text>
+                                        <Text style={styles.declineText}>Decline</Text>
                                     </TouchableOpacity>
                                 </>
                             ) : (
@@ -488,47 +488,51 @@ const GroupDisplay = () => {
             {!!group?.description && (
                 <Text style={styles.description}>{group.description}</Text>
             )}
-            {hasOtherMembers && (
+            {isAdmin && (
                 <View style={styles.sectionRow}>
                     <Text style={styles.sectionLabel}>Members</Text>
-                    {isAdmin && (
-                        <View style={styles.actionIcons}>
+                    <View style={styles.actionIcons}>
+                        <TouchableOpacity
+                            style={styles.iconButton}
+                            onPress={() => {
+                                setMembersPanelOpened(false);
+                                setInvitePanelOpened(true);
+                            }}
+                        >
+                            <Ionicons name="person-add-outline" size={15} color={colors.terracotta.primary}/>
+                        </TouchableOpacity>
+                        <View>
                             <TouchableOpacity
                                 style={styles.iconButton}
-                                onPress={() => {
-                                    setMembersPanelOpened(false);
-                                    setInvitePanelOpened(true);
-                                }}
+                                onPress={() => setMembersPanelOpened(true)}
                             >
-                                <Ionicons name="person-add-outline" size={15} color={colors.terracotta.primary}/>
+                                <Ionicons name="people-outline" size={15} color={colors.terracotta.primary}/>
                             </TouchableOpacity>
-                            <View>
-                                <TouchableOpacity
-                                    style={styles.iconButton}
-                                    onPress={() => setMembersPanelOpened(true)}
-                                >
-                                    <Ionicons name="people-outline" size={15} color={colors.terracotta.primary}/>
-                                </TouchableOpacity>
-                                {pendingMembers.length > 0 && (
-                                    <View style={styles.iconBadge}>
-                                        <Text style={styles.iconBadgeText}>{pendingMembers.length}</Text>
-                                    </View>
-                                )}
-                            </View>
+                            {pendingMembers.length > 0 && (
+                                <View style={styles.iconBadge}>
+                                    <Text style={styles.iconBadgeText}>{pendingMembers.length}</Text>
+                                </View>
+                            )}
                         </View>
-                    )}
+                    </View>
                 </View>
             )}
-            {isAdmin && hasOtherMembers && (
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipRow}>
-                    {activeMembers.filter(m => m.role !== Role.owner).map((m) => (
-                        <View key={m.id} style={styles.memberChip}>
-                            <Text
-                                style={styles.memberChipName}>{m.firstName} {m.lastName} {m.id === user.id && '(you)'}</Text>
-                            {m.id !== user.id && <Text style={styles.memberChipUsername}>{m.username}</Text>}
-                        </View>
-                    ))}
-                </ScrollView>
+            {isAdmin && (
+                hasOtherMembers ? (
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipRow}>
+                        {activeMembers.filter(m => m.role !== Role.owner).map((m) => (
+                            <View key={m.id} style={styles.memberChip}>
+                                <Text
+                                    style={styles.memberChipName}>{m.firstName} {m.lastName} {m.id === user.id && '(you)'}</Text>
+                                {m.id !== user.id && <Text style={styles.memberChipUsername}>{m.username}</Text>}
+                            </View>
+                        ))}
+                    </ScrollView>
+                ) : (
+                    <Text style={[styles.emptyText, {marginBottom: 22}]}>
+                        No members currently, invite somebody to join!
+                    </Text>
+                )
             )}
             <View style={styles.sectionRow}>
                 <Text style={styles.sectionTitle}>Upcoming events</Text>

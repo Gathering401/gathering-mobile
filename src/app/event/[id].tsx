@@ -1,10 +1,17 @@
 import {useEffect, useState} from 'react';
 import {Stack, useLocalSearchParams, useRouter} from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
-import {useQuery, useMutation, useQueryClient, UseQueryResult} from '@tanstack/react-query';
+import {useMutation, useQuery, useQueryClient, UseQueryResult} from '@tanstack/react-query';
 import {
-    ActivityIndicator, Linking, Modal, Platform, ScrollView, Switch, Text, TouchableOpacity,
-    TouchableWithoutFeedback, View
+    ActivityIndicator,
+    Linking,
+    Modal,
+    Platform,
+    ScrollView,
+    Text,
+    TouchableOpacity,
+    TouchableWithoutFeedback,
+    View
 } from 'react-native';
 import {Ionicons} from '@expo/vector-icons';
 import dayjs from 'dayjs';
@@ -62,7 +69,7 @@ const EventDisplay = () => {
         SecureStore.getItemAsync('user').then(u => u && setUser(JSON.parse(u)));
     }, []);
 
-    const {isLoading, data, error, refetch}: UseQueryResult = useQuery<Event>({
+    const {isLoading, data, error, refetch} = useQuery<Event>({
         queryKey: [`eventId-${eventId}`],
         enabled: !!authHeader.Authorization && !!groupId,
         queryFn: async () => {
@@ -113,9 +120,15 @@ const EventDisplay = () => {
                 headers: authHeader
             });
             const data = await response.json();
-            if (!data.success) throw new Error(data.error);
+            if (!data.success) {
+                throw new Error(data.error);
+            }
         },
         onSuccess: () => {
+            void queryClient.invalidateQueries({queryKey: ['events']});
+            void queryClient.invalidateQueries({queryKey: [`groupId-${groupId}-all-events`]});
+            void queryClient.invalidateQueries({queryKey: ['pendingInvitations']});
+            void queryClient.invalidateQueries({queryKey: [`eventId-${eventId}`]});
             router.back();
         }
     });
@@ -124,7 +137,7 @@ const EventDisplay = () => {
 
     useEffect(() => {
         if (error) {
-            router.replace('/');
+            router.back();
         }
     }, [error]);
 
@@ -152,10 +165,10 @@ const EventDisplay = () => {
             ios: `maps://?q=${address}`,
             android: `geo:0,0?q=${address}`,
             default: `https://maps.google.com/?q=${address}`
-        }) as string;
+        });
 
         Linking.openURL(url).catch(() => {
-            Linking.openURL(`https://maps.google.com/?q=${address}`);
+            void Linking.openURL(`https://maps.google.com/?q=${address}`);
         });
     };
 
@@ -175,15 +188,15 @@ const EventDisplay = () => {
                 editDateEnabled: seriesId ? 'false' : 'true',
             }
         });
-    };
+    }
 
     const handleEditClick = () => {
-        if (!event.seriesId) {
+        if (event.repetition === Repetition.none) {
             navigateToEdit();
         } else {
             setEditModalOpened(true);
         }
-    };
+    }
 
     const handleCancelClick = () => {
         if (event.seriesId) {
@@ -196,13 +209,11 @@ const EventDisplay = () => {
     const rsvpOptions = getRsvpsForDropdown();
 
     const menuItems: HeaderMenuItem[] = [];
-    if (canEdit) {
-        menuItems.push({key: 'edit', title: 'Edit Event', onSelect: handleEditClick});
-    }
     if (isHost) {
         menuItems.push({key: 'guestlist', title: 'Guest List', onSelect: () => setGuestListOpened(true)});
     }
     if (canEdit) {
+        menuItems.push({key: 'edit', title: 'Edit Event', onSelect: handleEditClick});
         menuItems.push({key: 'cancel', title: 'Cancel Event', destructive: true, onSelect: handleCancelClick});
     }
 
@@ -218,12 +229,10 @@ const EventDisplay = () => {
                     <Text style={styles.title}>{event.name}</Text>
                     <Text style={styles.hostedBy}>Hosted by {event.host.fullName}</Text>
                 </View>
-
                 <View style={styles.dateChip}>
                     <Ionicons name="calendar-outline" size={18} color={colors.terracotta.text}/>
                     <Text style={styles.dateChipText}>{dayjs(event.date).format('ddd, MMM D [at] h:mm A')}</Text>
                 </View>
-
                 <View style={styles.iconRow}>
                     <TouchableOpacity style={styles.actionButton} onPress={handleOpenMaps}>
                         <Ionicons name="navigate-outline" size={17} color={colors.terracotta.primary}/>
@@ -306,8 +315,7 @@ const EventDisplay = () => {
                 <Modal visible={editModalOpened} transparent animationType="slide">
                     <TouchableWithoutFeedback onPress={() => setEditModalOpened(false)}>
                         <View style={styles.modalOverlay}>
-                            <TouchableWithoutFeedback onPress={() => {
-                            }}>
+                            <TouchableWithoutFeedback onPress={() => {}}>
                                 <View style={styles.modalContent}>
                                     <Text style={styles.modalTitle}>Edit Event</Text>
                                     <Text style={styles.modalBody}>Would you like to edit the series or just this single

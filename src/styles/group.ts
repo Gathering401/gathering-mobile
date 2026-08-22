@@ -73,15 +73,24 @@ export const styles = StyleSheet.create({
     roleRow: {flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8},
     selectButton: {justifyContent: 'center'},
     selectButtonText: {fontSize: 13, color: colors.terracotta.primary, fontWeight: '500'},
-    removeButton: {
+    declineButton: {
         borderWidth: 1,
-        borderColor: '#ef4444',
+        borderColor: colors.terracotta.primary,
         borderRadius: 8,
         paddingHorizontal: 10,
         paddingVertical: 6,
         alignItems: 'center'
     },
-    removeText: {color: '#ef4444', fontSize: 13},
+    declineText: {color: colors.terracotta.primary, fontSize: 13},
+    removeButton: {
+        borderWidth: 1,
+        borderColor: '#d97a7a',
+        borderRadius: 8,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        alignItems: 'center'
+    },
+    removeText: {color: '#d97a7a', fontSize: 13},
     button: {backgroundColor: colors.sage.primary, borderRadius: 9, paddingHorizontal: 14, paddingVertical: 9, flexDirection: 'row', alignItems: 'center', gap: 4},
     buttonText: {color: '#fff', fontWeight: '500', fontSize: 13},
     modalContainer: {flex: 1, padding: 20, paddingTop: 60, backgroundColor: '#fff'},

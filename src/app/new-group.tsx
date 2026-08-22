@@ -1,4 +1,4 @@
-import {useState, useEffect} from 'react';
+import {useState, useEffect, useRef} from 'react';
 import {useRouter, useLocalSearchParams} from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import {useForm, Controller} from 'react-hook-form';
@@ -21,6 +21,7 @@ const GroupForm = () => {
     const params = useLocalSearchParams();
     const queryClient = useQueryClient();
     const [token, setToken] = useState<string | null>(null);
+    const descriptionKey = useRef(`description-${Date.now()}`).current;
 
     const isEditing = !!params.id;
 
@@ -37,14 +38,14 @@ const GroupForm = () => {
     });
 
     const onSubmit = async (values: GroupValues) => {
-        if (!(/[A-Z0-9]{1,50}/i).test(values.name)) {
-            return Toast.show({type: 'error', text1: 'Name', text2: 'Group name cannot exceed 50 characters'});
+        if (values.name.length === 0 || values.name.length > 50) {
+            return Toast.show({type: 'error', text1: 'Name', text2: 'Group name is required and cannot exceed 50 characters'});
         }
-        if (!(/[A-Z0-9]{1,200}/i).test(values.description)) {
+        if (values.description.length === 0 || values.description.length > 200) {
             return Toast.show({
                 type: 'error',
                 text1: 'Description',
-                text2: 'Group description cannot exceed 200 characters'
+                text2: 'Group description is required and cannot exceed 200 characters'
             });
         }
 
@@ -80,7 +81,6 @@ const GroupForm = () => {
                 <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
                     <Text style={styles.title}>{isEditing ? 'Edit Group' : 'New Group'}</Text>
                     <Text style={styles.legend}><Text style={styles.required}>*</Text> Required</Text>
-
                     <Controller
                         control={control}
                         name="name"
@@ -106,6 +106,7 @@ const GroupForm = () => {
                             <View style={styles.fieldContainer}>
                                 <Text style={styles.label}>Description <Text style={styles.required}>*</Text></Text>
                                 <TextInput
+                                    key={descriptionKey}
                                     style={[styles.input, styles.textarea]}
                                     placeholder="Description"
                                     maxLength={200}

@@ -355,11 +355,10 @@ const EventForm = () => {
                                 {showDatePicker && (
                                     <View>
                                         <DateTimePicker
-                                            value={selectedDate ?? new Date()}
+                                            value={selectedDate && selectedDate >= new Date() ? selectedDate : new Date()}
                                             mode="datetime"
                                             display={Platform.OS === 'ios' ? 'inline' : 'default'}
                                             minimumDate={new Date()}
-                                            minuteInterval={5}
                                             onChange={(_, date) => {
                                                 if (date) {
                                                     setValue('date', date);

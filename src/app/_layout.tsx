@@ -2,8 +2,10 @@ import {useEffect, useState} from 'react';
 import {Stack, useRouter, useSegments} from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import * as Notifications from 'expo-notifications';
+import * as SplashScreen from 'expo-splash-screen';
 import {View, ActivityIndicator, TouchableOpacity} from 'react-native';
 import {QueryClient, QueryClientProvider, useQuery} from '@tanstack/react-query';
+import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {Ionicons} from "@expo/vector-icons";
 import {colors} from "../styles/colors";
 import {styles} from "../styles/layout";
@@ -21,10 +23,14 @@ Notifications.setNotificationHandler({
     } as NotificationBehavior),
 });
 
+void SplashScreen.preventAutoHideAsync();
+
 export default function RootLayout() {
     return (
         <QueryClientProvider client={queryClient}>
-            <RootLayoutNav/>
+            <SafeAreaProvider>
+                <RootLayoutNav/>
+            </SafeAreaProvider>
         </QueryClientProvider>
     );
 }
@@ -71,7 +77,7 @@ function RootLayoutNav() {
 
                 setToken(storedToken);
             } catch {
-                console.log('Error with token in layout')
+                console.log('Error with token in layout');
             }
 
             setIsReady(true);
@@ -101,7 +107,19 @@ function RootLayoutNav() {
 
     useEffect(() => {
         const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
-            const invitationId = response.notification.request.content.data?.invitationId;
+            const data = response.notification.request.content.data;
+            const invitationId = data?.invitationId;
+            const eventId = data?.eventId;
+            const groupId = data?.groupId;
+
+            if (eventId) {
+                router.push({
+                    pathname: '/event/[id]',
+                    params: {id: String(eventId), groupId: String(groupId)}
+                });
+                return;
+            }
+
             if (invitationId) {
                 router.replace({
                     pathname: '/(tabs)',
@@ -117,6 +135,8 @@ function RootLayoutNav() {
         if (!isReady) {
             return;
         }
+
+        void SplashScreen.hideAsync();
 
         const response = Notifications.getLastNotificationResponse();
         if (response) {

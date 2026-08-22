@@ -2,7 +2,7 @@ import {StyleSheet} from 'react-native';
 import {colors} from './colors';
 
 export const styles = StyleSheet.create({
-    container: {flex: 1, justifyContent: 'center', padding: 24},
+    container: {flex: 1, justifyContent: 'center', padding: 24, backgroundColor: '#FAF7F2'},
     inner: {flex: 1, justifyContent: 'center'},
     title: {fontSize: 28, fontWeight: '700', marginBottom: 24, color: colors.terracotta.text},
     fieldContainer: {marginBottom: 16},
