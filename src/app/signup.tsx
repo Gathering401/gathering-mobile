@@ -1,6 +1,7 @@
 import {useEffect, useState} from 'react';
 import {useRouter, useLocalSearchParams} from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
+import * as WebBrowser from 'expo-web-browser';
 import {useForm, Controller} from 'react-hook-form';
 import Toast, {BaseToast, ErrorToast} from 'react-native-toast-message';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -67,6 +68,7 @@ const SignUp = () => {
     const params = useLocalSearchParams();
     const [loading, setLoading] = useState(false);
     const [showDatePicker, setShowDatePicker] = useState(false);
+    const [termsAccepted, setTermsAccepted] = useState(false);
     const {registerPushToken} = usePushToken();
 
     const isEdit = params.isEdit === 'true';
@@ -127,6 +129,13 @@ const SignUp = () => {
         }
         if (!isEdit && values.password !== values.confirmPassword) {
             return Toast.show({type: 'error', text1: 'Confirm Password', text2: 'Passwords do not match'});
+        }
+        if (!isEdit && !termsAccepted) {
+            return Toast.show({
+                type: 'error',
+                text1: 'Terms',
+                text2: 'You must accept the Terms of Service and Privacy Policy to continue'
+            });
         }
 
         setLoading(true);
@@ -319,6 +328,30 @@ const SignUp = () => {
                                     </View>
                                 )}
                             />
+                            <View style={styles.checkboxRow}>
+                                <TouchableOpacity
+                                    style={[styles.checkbox, termsAccepted && styles.checkboxChecked]}
+                                    onPress={() => setTermsAccepted((prev) => !prev)}
+                                >
+                                    {termsAccepted && <Text style={styles.checkboxCheckmark}>✓</Text>}
+                                </TouchableOpacity>
+                                <Text style={styles.checkboxLabel}>
+                                    I agree to the{' '}
+                                    <Text
+                                        style={styles.checkboxLink}
+                                        onPress={() => WebBrowser.openBrowserAsync(`${process.env.EXPO_PUBLIC_API_URL}/terms.html`)}
+                                    >
+                                        Terms of Service
+                                    </Text>
+                                    {' '}and{' '}
+                                    <Text
+                                        style={styles.checkboxLink}
+                                        onPress={() => WebBrowser.openBrowserAsync(`${process.env.EXPO_PUBLIC_API_URL}/privacy.html`)}
+                                    >
+                                        Privacy Policy
+                                    </Text>
+                                </Text>
+                            </View>
                         </>
                     )}
                     <TouchableOpacity

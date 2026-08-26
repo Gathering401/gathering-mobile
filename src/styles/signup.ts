@@ -28,4 +28,19 @@ export const styles = StyleSheet.create({
     secondaryButtonText: {color: colors.terracotta.primary, fontSize: 16, fontWeight: '600'},
     modalOverlay: {flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end'},
     modalContent: {backgroundColor: '#fff', borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 24},
+    checkboxRow: {flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 16},
+    checkbox: {
+        width: 22,
+        height: 22,
+        borderRadius: 4,
+        borderWidth: 1,
+        borderColor: colors.sage.secondary,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 2
+    },
+    checkboxChecked: {backgroundColor: colors.terracotta.primary, borderColor: colors.terracotta.primary},
+    checkboxCheckmark: {color: '#fff', fontSize: 14, fontWeight: '700'},
+    checkboxLabel: {flex: 1, fontSize: 14, color: colors.sage.text},
+    checkboxLink: {color: colors.terracotta.primary, fontWeight: '600'}
 });
