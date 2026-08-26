@@ -42,11 +42,42 @@ function RootLayoutNav() {
     const [token, setToken] = useState<string | null>(null);
 
     useEffect(() => {
+        const tryRefresh = async (refreshToken: string): Promise<string | null> => {
+            try {
+                const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/refresh`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({refreshToken})
+                });
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    return null;
+                }
+
+                await SecureStore.setItemAsync('token', data.token);
+                await SecureStore.setItemAsync('refreshToken', data.refreshToken);
+
+                return data.token;
+            } catch {
+                return null;
+            }
+        }
+
         const checkAuth = async () => {
-            const storedToken = await SecureStore.getItemAsync('token');
+            let storedToken = await SecureStore.getItemAsync('token');
+            const storedRefreshToken = await SecureStore.getItemAsync('refreshToken');
             const beforeAuth = ['login', 'signup', 'forgot-password', 'reset-password'].includes(segments[0]);
 
+            if (!storedToken && storedRefreshToken) {
+                storedToken = await tryRefresh(storedRefreshToken);
+            }
+
             if (!storedToken) {
+                await SecureStore.deleteItemAsync('token');
+                await SecureStore.deleteItemAsync('user');
+                await SecureStore.deleteItemAsync('refreshToken');
                 setToken(null);
                 if (!beforeAuth) {
                     setTimeout(() => router.replace('/login'), 0);
@@ -69,6 +100,7 @@ function RootLayoutNav() {
                 if (!response.ok) {
                     await SecureStore.deleteItemAsync('token');
                     await SecureStore.deleteItemAsync('user');
+                    await SecureStore.deleteItemAsync('refreshToken');
                     setToken(null);
                     setTimeout(() => router.replace('/login'), 0);
                     setIsReady(true);
@@ -81,7 +113,7 @@ function RootLayoutNav() {
             }
 
             setIsReady(true);
-        };
+        }
 
         void checkAuth();
     }, [segments]);
@@ -154,10 +186,23 @@ function RootLayoutNav() {
     }, [isReady]);
 
     const handleLogout = async () => {
+        const refreshToken = await SecureStore.getItemAsync('refreshToken');
+
+        try {
+            await fetch(`${process.env.EXPO_PUBLIC_API_URL}/logout`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({refreshToken})
+            });
+        } catch {
+            console.log('Error revoking refresh token on logout');
+        }
+
         await SecureStore.deleteItemAsync('token');
         await SecureStore.deleteItemAsync('user');
+        await SecureStore.deleteItemAsync('refreshToken');
         router.replace('/login');
-    };
+    }
 
     const handleEditAccount = async () => {
         const stored = await SecureStore.getItemAsync('user');

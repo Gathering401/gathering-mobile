@@ -18,6 +18,7 @@ interface LogInValues {
 const LogIn = () => {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
+    const [staySignedIn, setStaySignedIn] = useState(false);
     const {control, handleSubmit} = useForm<LogInValues>({
         defaultValues: {
             username: '',
@@ -30,7 +31,7 @@ const LogIn = () => {
         setLoading(true);
         try {
             const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/login`, {
-                body: JSON.stringify(values),
+                body: JSON.stringify({...values, staySignedIn}),
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'}
             });
@@ -40,6 +41,11 @@ const LogIn = () => {
             if (data.success) {
                 await SecureStore.setItemAsync('token', data.token);
                 await SecureStore.setItemAsync('user', JSON.stringify(data.user));
+                if (data.refreshToken) {
+                    await SecureStore.setItemAsync('refreshToken', data.refreshToken);
+                } else {
+                    await SecureStore.deleteItemAsync('refreshToken');
+                }
                 await registerPushToken(data.token);
                 router.replace('/');
             } else {
@@ -92,6 +98,15 @@ const LogIn = () => {
                             </View>
                         )}
                     />
+                    <View style={styles.checkboxRow}>
+                        <TouchableOpacity
+                            style={[styles.checkbox, staySignedIn && styles.checkboxChecked]}
+                            onPress={() => setStaySignedIn((prev) => !prev)}
+                        >
+                            {staySignedIn && <Text style={styles.checkboxCheckmark}>✓</Text>}
+                        </TouchableOpacity>
+                        <Text style={styles.checkboxLabel}>Stay signed in</Text>
+                    </View>
                     <TouchableOpacity
                         style={styles.button}
                         onPress={handleSubmit(onSubmit)}

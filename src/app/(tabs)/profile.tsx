@@ -3,7 +3,6 @@ import * as SecureStore from 'expo-secure-store';
 import {View, Text, ActivityIndicator} from 'react-native';
 import dayjs from 'dayjs';
 import {styles} from "../../styles/profile";
-import {HeaderMenu} from "../../components/HeaderMenu";
 
 const Profile = () => {
     const [user, setUser] = useState<any>(null);
