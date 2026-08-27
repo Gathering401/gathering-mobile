@@ -165,12 +165,13 @@ const SignUp = () => {
                     await SecureStore.setItemAsync('token', data.token);
                     await SecureStore.setItemAsync('user', JSON.stringify(data.response));
                     await registerPushToken(data.token);
+                    router.back();
                 } else {
                     const current = await SecureStore.getItemAsync('user');
                     const currentUser = current ? JSON.parse(current) : {};
                     await SecureStore.setItemAsync('user', JSON.stringify({...currentUser, ...body}));
+                    router.replace('/profile');
                 }
-                router.replace(isEdit ? '/profile' : '/');
             } else {
                 Toast.show({type: 'error', text1: 'Error', text2: data.error || 'Something went wrong. Please try again.'});
             }
