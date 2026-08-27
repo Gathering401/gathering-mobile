@@ -25,7 +25,7 @@ import {BusinessInvitation} from "../../constants/BusinessInvitation";
 import {PendingInvitation} from "../../constants/PendingInvitation";
 
 const APP_OPEN_PROMPT_KEY = 'lastInvitationPromptShown';
-const CARD_WIDTH = Dimensions.get('window').width * 0.4;
+const CARD_WIDTH = Dimensions.get('window').width * 0.45;
 
 const rsvpColor = (rsvp: Rsvp): string => {
     switch (rsvp) {
@@ -80,21 +80,21 @@ const Main = () => {
         }
     });
 
-    const {isLoading: businessInvitationsLoading, data: businessInvitations = []} = useQuery<BusinessInvitation[]>({
-        queryKey: ['businessInvitations'],
-        enabled: !!authHeader.Authorization,
-        queryFn: async () => {
-            const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/event/invitations`, {
-                method: 'GET',
-                headers: authHeader
-            });
-            const data = await response.json();
-            if (data.success) {
-                return data.response;
-            }
-            throw new Error(data.error);
-        }
-    });
+    // const {isLoading: businessInvitationsLoading, data: businessInvitations = []} = useQuery<BusinessInvitation[]>({
+    //     queryKey: ['businessInvitations'],
+    //     enabled: !!authHeader.Authorization,
+    //     queryFn: async () => {
+    //         const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/event/invitations`, {
+    //             method: 'GET',
+    //             headers: authHeader
+    //         });
+    //         const data = await response.json();
+    //         if (data.success) {
+    //             return data.response;
+    //         }
+    //         throw new Error(data.error);
+    //     }
+    // });
 
     const {isLoading: pendingInvitationsLoading, data: pendingInvitations = []} = useQuery<PendingInvitation[]>({
         queryKey: ['pendingInvitations'],
@@ -112,53 +112,53 @@ const Main = () => {
         }
     });
 
-    useEffect(() => {
-        if (businessInvitationsLoading || !businessInvitations.length) {
-            return;
-        }
+    // useEffect(() => {
+    //     if (businessInvitationsLoading || !businessInvitations.length) {
+    //         return;
+    //     }
+    //
+    //     if (params.invitationId) {
+    //         const tapped = businessInvitations.find(i => String(i.id) === params.invitationId);
+    //         if (tapped) {
+    //             setSelectedInvitation(tapped);
+    //         }
+    //         return;
+    //     }
+    //
+    //     const pushSlotInvitation = businessInvitations.find(i => i.slotPosition === 1);
+    //     if (!pushSlotInvitation) {
+    //         return;
+    //     }
+    //
+    //     const today = dayjs().format('YYYY-MM-DD');
+    //     const expectedKey = `${today}:${pushSlotInvitation.id}`;
+    //
+    //     SecureStore.getItemAsync(APP_OPEN_PROMPT_KEY).then((lastShownKey) => {
+    //         if (lastShownKey === expectedKey) {
+    //             return;
+    //         }
+    //         setSelectedInvitation(pushSlotInvitation);
+    //         SecureStore.setItemAsync(APP_OPEN_PROMPT_KEY, expectedKey);
+    //     });
+    // }, [businessInvitationsLoading, businessInvitations, params.invitationId]);
 
-        if (params.invitationId) {
-            const tapped = businessInvitations.find(i => String(i.id) === params.invitationId);
-            if (tapped) {
-                setSelectedInvitation(tapped);
-            }
-            return;
-        }
-
-        const pushSlotInvitation = businessInvitations.find(i => i.slotPosition === 1);
-        if (!pushSlotInvitation) {
-            return;
-        }
-
-        const today = dayjs().format('YYYY-MM-DD');
-        const expectedKey = `${today}:${pushSlotInvitation.id}`;
-
-        SecureStore.getItemAsync(APP_OPEN_PROMPT_KEY).then((lastShownKey) => {
-            if (lastShownKey === expectedKey) {
-                return;
-            }
-            setSelectedInvitation(pushSlotInvitation);
-            SecureStore.setItemAsync(APP_OPEN_PROMPT_KEY, expectedKey);
-        });
-    }, [businessInvitationsLoading, businessInvitations, params.invitationId]);
-
-    const declineMutation = useMutation({
-        mutationFn: async (businessInvitationId: number) => {
-            const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/event/invitations/decline`, {
-                method: 'PUT',
-                headers: {...authHeader, 'Content-Type': 'application/json'},
-                body: JSON.stringify({businessInvitationId})
-            });
-            const data = await response.json();
-            if (!data.success) {
-                throw new Error(data.error);
-            }
-        },
-        onSuccess: async () => {
-            await queryClient.invalidateQueries({queryKey: ['businessInvitations']});
-            setSelectedInvitation(null);
-        }
-    });
+    // const declineMutation = useMutation({
+    //     mutationFn: async (businessInvitationId: number) => {
+    //         const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/event/invitations/decline`, {
+    //             method: 'PUT',
+    //             headers: {...authHeader, 'Content-Type': 'application/json'},
+    //             body: JSON.stringify({businessInvitationId})
+    //         });
+    //         const data = await response.json();
+    //         if (!data.success) {
+    //             throw new Error(data.error);
+    //         }
+    //     },
+    //     onSuccess: async () => {
+    //         await queryClient.invalidateQueries({queryKey: ['businessInvitations']});
+    //         setSelectedInvitation(null);
+    //     }
+    // });
 
     const {updateRsvp, seriesPromptVisible, confirmSeriesChoice, cancelSeriesPrompt} = useRsvpUpdate(async () => {
         if (rsvpPickerEvent) {
@@ -335,71 +335,71 @@ const Main = () => {
                             </View>
                         </TouchableWithoutFeedback>
                     </Modal>
-                    <Modal visible={!!selectedInvitation} transparent animationType="slide">
-                        <TouchableWithoutFeedback onPress={() => setSelectedInvitation(null)}>
-                            <View style={styles.modalOverlay}>
-                                <TouchableWithoutFeedback onPress={() => {
-                                }}>
-                                    <View style={styles.modalContent}>
-                                        <Text style={styles.cardGroupScroll}>
-                                            {selectedInvitation?.businessName}
-                                        </Text>
-                                        <Text style={styles.modalTitle}>{selectedInvitation?.name}</Text>
-                                        <Text style={styles.emptyText}>{selectedInvitation?.description}</Text>
-                                        <Text style={[styles.cardTime, {marginTop: 12}]}>
-                                            {selectedInvitation && formatInvitationDate(selectedInvitation.dateStart, selectedInvitation.dateEnd)}
-                                        </Text>
-                                        <View style={styles.modalButtonRow}>
-                                            <TouchableOpacity
-                                                style={styles.closeButtonOutline}
-                                                onPress={() => setSelectedInvitation(null)}
-                                            >
-                                                <Text style={styles.closeButtonText}>Close</Text>
-                                            </TouchableOpacity>
-                                            <TouchableOpacity
-                                                style={styles.createEventButton}
-                                                onPress={() => {
-                                                    const invitation = selectedInvitation!;
-                                                    setSelectedInvitation(null);
-                                                    router.push({
-                                                        pathname: '/new-event',
-                                                        params: {
-                                                            name: invitation.name,
-                                                            description: invitation.description,
-                                                            location: invitation.locationAddress,
-                                                            cost: String(invitation.averageCost),
-                                                            businessInvitationId: String(invitation.id)
-                                                        }
-                                                    });
-                                                }}
-                                            >
-                                                <Text style={styles.submitText}>Create Event</Text>
-                                            </TouchableOpacity>
-                                        </View>
-                                        <TouchableOpacity
-                                            style={styles.cancelButton}
-                                            onPress={() => {
-                                                Alert.alert(
-                                                    'Decline invitation?',
-                                                    'You won\'t be asked about this invitation again.',
-                                                    [
-                                                        {text: 'Cancel', style: 'cancel'},
-                                                        {
-                                                            text: 'Decline',
-                                                            style: 'destructive',
-                                                            onPress: () => declineMutation.mutate(selectedInvitation!.id)
-                                                        }
-                                                    ]
-                                                );
-                                            }}
-                                        >
-                                            <Text style={styles.rejectionText}>Not interested, don't ask again</Text>
-                                        </TouchableOpacity>
-                                    </View>
-                                </TouchableWithoutFeedback>
-                            </View>
-                        </TouchableWithoutFeedback>
-                    </Modal>
+                    {/*<Modal visible={!!selectedInvitation} transparent animationType="slide">*/}
+                    {/*    <TouchableWithoutFeedback onPress={() => setSelectedInvitation(null)}>*/}
+                    {/*        <View style={styles.modalOverlay}>*/}
+                    {/*            <TouchableWithoutFeedback onPress={() => {*/}
+                    {/*            }}>*/}
+                    {/*                <View style={styles.modalContent}>*/}
+                    {/*                    <Text style={styles.cardGroupScroll}>*/}
+                    {/*                        {selectedInvitation?.businessName}*/}
+                    {/*                    </Text>*/}
+                    {/*                    <Text style={styles.modalTitle}>{selectedInvitation?.name}</Text>*/}
+                    {/*                    <Text style={styles.emptyText}>{selectedInvitation?.description}</Text>*/}
+                    {/*                    <Text style={[styles.cardTime, {marginTop: 12}]}>*/}
+                    {/*                        {selectedInvitation && formatInvitationDate(selectedInvitation.dateStart, selectedInvitation.dateEnd)}*/}
+                    {/*                    </Text>*/}
+                    {/*                    <View style={styles.modalButtonRow}>*/}
+                    {/*                        <TouchableOpacity*/}
+                    {/*                            style={styles.closeButtonOutline}*/}
+                    {/*                            onPress={() => setSelectedInvitation(null)}*/}
+                    {/*                        >*/}
+                    {/*                            <Text style={styles.closeButtonText}>Close</Text>*/}
+                    {/*                        </TouchableOpacity>*/}
+                    {/*                        <TouchableOpacity*/}
+                    {/*                            style={styles.createEventButton}*/}
+                    {/*                            onPress={() => {*/}
+                    {/*                                const invitation = selectedInvitation!;*/}
+                    {/*                                setSelectedInvitation(null);*/}
+                    {/*                                router.push({*/}
+                    {/*                                    pathname: '/new-event',*/}
+                    {/*                                    params: {*/}
+                    {/*                                        name: invitation.name,*/}
+                    {/*                                        description: invitation.description,*/}
+                    {/*                                        location: invitation.locationAddress,*/}
+                    {/*                                        cost: String(invitation.averageCost),*/}
+                    {/*                                        businessInvitationId: String(invitation.id)*/}
+                    {/*                                    }*/}
+                    {/*                                });*/}
+                    {/*                            }}*/}
+                    {/*                        >*/}
+                    {/*                            <Text style={styles.submitText}>Create Event</Text>*/}
+                    {/*                        </TouchableOpacity>*/}
+                    {/*                    </View>*/}
+                    {/*                    <TouchableOpacity*/}
+                    {/*                        style={styles.cancelButton}*/}
+                    {/*                        onPress={() => {*/}
+                    {/*                            Alert.alert(*/}
+                    {/*                                'Decline invitation?',*/}
+                    {/*                                'You won\'t be asked about this invitation again.',*/}
+                    {/*                                [*/}
+                    {/*                                    {text: 'Cancel', style: 'cancel'},*/}
+                    {/*                                    {*/}
+                    {/*                                        text: 'Decline',*/}
+                    {/*                                        style: 'destructive',*/}
+                    {/*                                        onPress: () => declineMutation.mutate(selectedInvitation!.id)*/}
+                    {/*                                    }*/}
+                    {/*                                ]*/}
+                    {/*                            );*/}
+                    {/*                        }}*/}
+                    {/*                    >*/}
+                    {/*                        <Text style={styles.rejectionText}>Not interested, don't ask again</Text>*/}
+                    {/*                    </TouchableOpacity>*/}
+                    {/*                </View>*/}
+                    {/*            </TouchableWithoutFeedback>*/}
+                    {/*        </View>*/}
+                    {/*    </TouchableWithoutFeedback>*/}
+                    {/*</Modal>*/}
                     <Text style={styles.dateTitle}>Pending Invitations</Text>
                     {pendingInvitationsLoading ? (
                         <ActivityIndicator size="small" style={{marginTop: 12}}/>
@@ -452,40 +452,41 @@ const Main = () => {
                             ))}
                         </ScrollView>
                     )}
-                    <Text style={styles.dateTitle}>Recommended Events</Text>
-                    {businessInvitationsLoading ? (
-                        <ActivityIndicator size="small" style={{marginTop: 12}}/>
-                    ) : businessInvitations.length === 0 ? (
-                        <Text style={styles.emptyText}>No invitations right now</Text>
-                    ) : (
-                        <ScrollView
-                            horizontal
-                            showsHorizontalScrollIndicator={false}
-                            contentContainerStyle={styles.contentContainer}
-                        >
-                            {businessInvitations.map((invitation) => (
-                                <TouchableOpacity
-                                    key={invitation.id}
-                                    style={[styles.card, {
-                                        width: CARD_WIDTH,
-                                        borderLeftWidth: 4,
-                                        borderLeftColor: colors.sage.primary
-                                    }]}
-                                    onPress={() => setSelectedInvitation(invitation)}
-                                >
-                                    <Text style={styles.cardGroupScroll}>
-                                        {invitation.businessName}
-                                    </Text>
-                                    <Text style={styles.cardTitle}>{invitation.name}</Text>
-                                    <View style={styles.cardFooter}>
-                                        <Text style={styles.cardTime}>
-                                            {formatInvitationDate(invitation.dateStart, invitation.dateEnd)}
-                                        </Text>
-                                    </View>
-                                </TouchableOpacity>
-                            ))}
-                        </ScrollView>
-                    )}
+                    {/*COMMENTED OUT FOR NOW, BUSINESS SIDE TOOK A BACK SEAT*/}
+                    {/*<Text style={styles.dateTitle}>Recommended Events</Text>*/}
+                    {/*{businessInvitationsLoading ? (*/}
+                    {/*    <ActivityIndicator size="small" style={{marginTop: 12}}/>*/}
+                    {/*) : businessInvitations.length === 0 ? (*/}
+                    {/*    <Text style={styles.emptyText}>No invitations right now</Text>*/}
+                    {/*) : (*/}
+                    {/*    <ScrollView*/}
+                    {/*        horizontal*/}
+                    {/*        showsHorizontalScrollIndicator={false}*/}
+                    {/*        contentContainerStyle={styles.contentContainer}*/}
+                    {/*    >*/}
+                    {/*        {businessInvitations.map((invitation) => (*/}
+                    {/*            <TouchableOpacity*/}
+                    {/*                key={invitation.id}*/}
+                    {/*                style={[styles.card, {*/}
+                    {/*                    width: CARD_WIDTH,*/}
+                    {/*                    borderLeftWidth: 4,*/}
+                    {/*                    borderLeftColor: colors.sage.primary*/}
+                    {/*                }]}*/}
+                    {/*                onPress={() => setSelectedInvitation(invitation)}*/}
+                    {/*            >*/}
+                    {/*                <Text style={styles.cardGroupScroll}>*/}
+                    {/*                    {invitation.businessName}*/}
+                    {/*                </Text>*/}
+                    {/*                <Text style={styles.cardTitle}>{invitation.name}</Text>*/}
+                    {/*                <View style={styles.cardFooter}>*/}
+                    {/*                    <Text style={styles.cardTime}>*/}
+                    {/*                        {formatInvitationDate(invitation.dateStart, invitation.dateEnd)}*/}
+                    {/*                    </Text>*/}
+                    {/*                </View>*/}
+                    {/*            </TouchableOpacity>*/}
+                    {/*        ))}*/}
+                    {/*    </ScrollView>*/}
+                    {/*)}*/}
                 </>
             )}
         </ScrollView>

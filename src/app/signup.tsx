@@ -371,7 +371,7 @@ const SignUp = () => {
                             </TouchableOpacity>
                         </>
                     ) : (
-                        <TouchableOpacity onPress={() => router.push('/login')}>
+                        <TouchableOpacity onPress={() => router.back()}>
                             <Text style={styles.link}>Already have an account? Log in here</Text>
                         </TouchableOpacity>
                     )}

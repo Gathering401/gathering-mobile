@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "scheme": "gathering",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/Gathering.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
